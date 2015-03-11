@@ -31,16 +31,6 @@ _logger = logging.getLogger(__name__)
 #                 'use_pos':fields.boolean("Use this cash register for the POS")
 #                 }
 
-class res_partner(osv.osv):
-    _inherit = 'res.partner'
-    
-    def create(self,cr,uid,vals,context=None):
-        vals['sequence'] = vals['name'][:3] + self.pool.get('ir.sequence').get(cr, uid, 'res.partner') or '/'
-        return super(res_partner,self).create(cr,uid,vals,context)
-    
-    _columns = {
-                'sequence':fields.char('Customer Id'),
-                }
 class pos_order(osv.osv):
     _inherit = "pos.order"
 
