@@ -1,0 +1,19 @@
+<openerp>
+	<data>
+
+        <record model="ir.ui.view" id="view_pos_pos_extend_form">
+            <field name="name">pos.order.extend</field>
+            <field name="model">pos.order</field>
+            <field name="inherit_id" ref="point_of_sale.view_pos_pos_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//page[@string='Products']/field[@name='lines']/tree[@string='Order lines']/field[@name='qty']" position="after">
+                	<field name="parent_id" invisible="1"/>
+                	<field name="available_qty" attrs="{'invisible': [('parent_id','=',True)]}"/>
+                	<field name="return_qty" attrs="{'invisible': [('parent_id','=',True)]}"/>
+                </xpath>
+                
+            </field>
+        </record>
+        
+    </data>
+</openerp>

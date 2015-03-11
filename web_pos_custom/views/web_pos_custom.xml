@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- vim:fdn=3:
+-->
+<openerp>
+    <data>
+        <template id="assets_backend" name="web_pos_custom assets" inherit_id="web.assets_backend">
+            <xpath expr="." position="inside">
+                <link rel="stylesheet" href="/web_pos_custom/static/src/css/web_pos_custom.css"/>
+                <link rel="stylesheet" href="/web_pos_custom/static/src/css/bootstrap_sidebar_tabs.css"/>
+
+                <script type="text/javascript" src="/web_pos_custom/static/src/js/web_pos_custom.js"></script>
+            </xpath>
+        </template>
+    <template id="pos custom show" inherit_id="point_of_sale.index" name="Point of Sale Custom">
+        <xpath expr="." position="inside">
+            <link rel="stylesheet" href="/web_pos_custom/static/src/css/web_pos_custom.css"/>
+            <link rel="stylesheet" href="/web_pos_custom/static/src/css/bootstrap_sidebar_tabs.css"/>
+
+            <link rel="stylesheet" href="/web/static/lib/bootstrap/css/bootstrap.css"/>
+            <script type="text/javascript" src="/web/static/lib/bootstrap/js/bootstrap.js"></script>
+        </xpath>
+    </template>
+
+    </data>
+</openerp>

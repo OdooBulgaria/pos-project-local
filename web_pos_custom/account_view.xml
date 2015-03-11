@@ -1,0 +1,30 @@
+<openerp>
+	<data>
+	
+	 <!-- Bank REgisters -->
+	  <record id="view_inheritance_account_bank_statement" model="ir.ui.view">
+            <field name="name">account.bank.statement</field>
+            <field name="model">account.bank.statement</field>
+            <field name="inherit_id" ref="account.view_bank_statement_form"/>
+            <field name="arch" type="xml">
+            	<xpath expr = "/form/sheet/group/group" postion = "after">
+            		<field name = "use_pos"/>
+            	</xpath>
+			</field>
+		</record>			
+		
+	<!-- Cash REgisters -->	
+		
+	  <record id="view_inheritance_account_bank_statement2" model="ir.ui.view">
+            <field name="name">account.bank.statement2</field>
+            <field name="model">account.bank.statement</field>
+            <field name="inherit_id" ref="account.view_bank_statement_form2"/>
+            <field name="arch" type="xml">
+            	<xpath expr = "/form/sheet/group/group" postion = "after">
+            		<field name = "use_pos"/>
+            	</xpath>
+			</field>
+		</record>				
+				
+	</data>
+</openerp>
