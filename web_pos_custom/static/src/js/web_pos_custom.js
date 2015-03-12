@@ -212,7 +212,7 @@ module.Orderline = module.Orderline.extend({
             	   order_line.set_quantity("remove");
                }else{break;}
            }
-     	    model_order.call('create_modify_order',[list_record,{'session_id':self.pos.pos_session.id}]).done(function(res){
+     	    model_order.call('create_modify_order',[self.pos.cashregisters[0].journal_id[0],list_record,{'session_id':self.pos.pos_session.id}]).done(function(res){
      	    	return;
      	    })
         },

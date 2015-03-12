@@ -31,11 +31,21 @@ _logger = logging.getLogger(__name__)
 #                 'use_pos':fields.boolean("Use this cash register for the POS")
 #                 }
 
+class res_partner(osv.osv):
+    _inherit = 'res.partner'
+    
+    def create(self,cr,uid,vals,context=None):
+        vals['sequence'] = vals['name'][:3] + self.pool.get('ir.sequence').get(cr, uid, 'res.partner') or '/'
+        return super(res_partner,self).create(cr,uid,vals,context)
+    
+    _columns = {
+                'sequence':fields.char('Customer Id'),
+                }
 class pos_order(osv.osv):
     _inherit = "pos.order"
 
 
-    def create_modify_order(self,cr,uid,list_record,context=None):
+    def create_modify_order(self,cr,uid,journal_id,list_record,context=None):
         line_obj = self.pool.get('pos.order.line')
         order_id = False
         for line in list_record:
@@ -54,7 +64,7 @@ class pos_order(osv.osv):
                 line_obj.write(cr,uid,line.get('id',False),{'return_qty':brw.return_qty+brw.available_qty - line.get('available_qty',0)},context)
 
         if order_id:
-            self.payment_recieved(cr,uid,{'order_ids':[order_id]},context)
+            self.payment_recieved(cr,uid,journal_id,{'order_ids':[order_id]},context)
         return True
     
     def _get_order(self, cr, uid, ids, context=None):
