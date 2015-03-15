@@ -31,20 +31,66 @@ _logger = logging.getLogger(__name__)
 #                 'use_pos':fields.boolean("Use this cash register for the POS")
 #                 }
 
-class res_partner(osv.osv):
-    _inherit = 'res.partner'
-    
-    def create(self,cr,uid,vals,context=None):
-        vals['sequence'] = vals['name'][:3] + self.pool.get('ir.sequence').get(cr, uid, 'res.partner') or '/'
-        return super(res_partner,self).create(cr,uid,vals,context)
-    
-    _columns = {
-                'sequence':fields.char('Customer Id'),
-                }
 class pos_order(osv.osv):
     _inherit = "pos.order"
 
-
+    def fetch_pos_order(self,cr,uid,context = None):
+        data = {}
+        id_list = []
+        cr.execute('''
+            select id from pos_order where state in ('invoiced','paid','done') and amount_total > 0 limit 1000
+        ''')
+        
+#         [(5,), (9,), (3,), (2,), (10,), (1,), (7,), (6,), (4,)]
+        id_list.extend(cr.fetchall())
+        cr.execute('''
+            select id from pos_order where state = 'draft' 
+        ''')
+        id_list.extend(cr.fetchall())
+        if id_list:
+            for order in self.browse(cr,uid,[x[0] for x in id_list]):
+                line_list = {}
+                for line in order.lines:
+                    product_id = line.product_id
+                    line_list.update({line.id:{
+                                      'id':line.id,
+                                      'qty':line.qty,
+                                      'price_unit':line.price_unit,
+                                      'discount':line.discount,
+                                      'available_qty':line.available_qty,
+                                      'return_qty':line.return_qty,
+                                    'product':{
+                                               'default_code':product_id.default_code,
+                                               'description':product_id.description,
+                                               'description_sale':product_id.description_sale,
+                                               'display_name':product_id.display_name,
+                                               'ean13':product_id.ean13,
+                                               'id':product_id.id,
+                                               'list_price':product_id.list_price,
+                                               'mes_type':product_id.mes_type,
+                                               'pos_categ_id':[product_id.pos_categ_id and product_id.pos_categ_id.id or False,product_id.pos_categ_id and product_id.pos_categ_id.name or False],
+                                               'price':product_id.price,
+                                               'product_tmpl_id':product_id.product_tmpl_id.id,
+                                               'taxes_id':[x.id for x in product_id.taxes_id],
+                                               'uom_id':[product_id.uom_id and product_id.uom_id.id or False, product_id.uom_id and product_id.uom_id.name or False],
+                                               'uos_coeff':product_id.uos_coeff,
+                                                'uos_id':product_id.uos_id and product_id.uos_id.id or False
+                                                }
+                                           }
+                                      })
+                data.update({ order.id:{
+                                         'id':order.id,
+                                         'state':order.state,
+                                         'name':order.name,
+                                         'date_order':order.date_order,
+                                         'amount_total':order.amount_total,
+                                         'partner_id':[order.partner_id.id,order.partner_id.name],
+                                         'sequence_partner':order.sequence_partner,
+                                         'lines':line_list
+                                         }
+                             })
+        return data
+    
     def create_modify_order(self,cr,uid,journal_id,list_record,context=None):
         line_obj = self.pool.get('pos.order.line')
         order_id = False

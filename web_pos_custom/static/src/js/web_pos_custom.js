@@ -101,6 +101,7 @@ module.Orderline = module.Orderline.extend({
         this.pos = options.pos;
         this.order = options.order;
         this.product = options.product;
+        console.log(options.product);
         this.price   = options.product.price;
         this.quantity = 1;
         this.quantityStr = '1';
@@ -195,7 +196,7 @@ module.Orderline = module.Orderline.extend({
             this.pos_name = options.pos_name;
         },
         
-        modify_order:function(){
+        modify_order:function(order_id){
         	var self = this;
         	var list_record = []
         	var model = new instance.web.Model('pos.order.line');
@@ -204,17 +205,20 @@ module.Orderline = module.Orderline.extend({
      	    while(true){
                var order_line = self.pos.get('selectedOrder').get('orderLines').at(0);
                if (order_line){
-                   list_record.push({'available_qty':order_line.available_qty,
+            	   list_record.push({'available_qty':order_line.available_qty,
                    	'id':order_line.pos_id,
                    	'product_id':order_line.product.id,
                    	'price':order_line.price,
                       })
+                      self.pos_widget.offline_pos_orders.orders[order_id].lines[order_line.id].available_qty = order_line.available_qty; 
             	   order_line.set_quantity("remove");
                }else{break;}
            }
-     	    model_order.call('create_modify_order',[self.pos.cashregisters[0].journal_id[0],list_record,{'session_id':self.pos.pos_session.id}]).done(function(res){
+     	    model_order.call('create_modify_order',[self.pos.cashregisters[0].journal_id[0],list_record,{'session_id':self.pos.pos_session.id}]).then(function(res){
      	    	return;
-     	    })
+     	    },function(err,event){ //indicator
+     	    	event.preventDefault();
+     	    });
         },
         
         renderElement: function() {
@@ -280,8 +284,8 @@ module.Orderline = module.Orderline.extend({
   	                  }
             		}
             		
-                    if (self.pos_name == "Modify Order"){
-                    	var currentOrder = self.pos.get('selectedOrder') 
+                    if (self.pos_name == "Modify Order"){ 
+                    	var currentOrder = self.pos.get('selectedOrder')
                     	self.pos_widget.available_qty = true;
                     	if (currentOrder.getTotalTaxIncluded() < 0){
                             self.pos_widget.screen_selector.show_popup('error',{
@@ -296,20 +300,19 @@ module.Orderline = module.Orderline.extend({
                     	});
                     	$($("tr[name='products']").children()[1]).css('display','none');
                     	$("tr[name='products']").append(QWeb.render('button_pay_cancel'))
-                    	$("li > a:contains('Products')")[0].click();
+                  	    self.pos_widget.switch_to_product();
                     	$("#modify_order_cancel").click(function(){
                 		  self.pos_widget.available_qty = undefined;
                   		  self.pos.get('selectedOrder').destroy();
                           $("#modify_order").remove();
                       	  $($("tr[name='products']").children()[1]).removeAttr("style");
-                      	  $("li > a:contains('Products')")[0].click();
                       	  self.pos_widget.switch_to_order();
                     	});
                     	var model = new instance.web.Model("pos.order.line");
                     	var model_order = new instance.web.Model("pos.order");
                     	$("#modify_order_pay_cash").click(function(){
                     		self.pos_widget.available_qty = undefined;
-                			self.modify_order(false,0);
+                			self.modify_order($("#corder_pos").find("input[name='sex'][type='checkbox']:checked").val());
                 			$("#modify_order").remove();
                     	    $($("tr[name='products']").children()[1]).removeAttr("style");
                     	    self.pos.get('selectedOrder').destroy();
@@ -405,7 +408,7 @@ module.Orderline = module.Orderline.extend({
             		$("div.clientlist-screen.screen").css("overflow","auto");
             		self.pos_widget.customer_id = $("input[name='sex'][type='radio']:checked").val();
             		self.pos_widget.mode = 'open'
-            		$("li > a:contains('Orders')")[0].click();
+        			self.pos_widget.switch_to_order();
             	}
             	
             	if (self.pos_name == 'Clear Customer Selection'){
@@ -480,6 +483,27 @@ module.ReceiptScreenWidget = module.ReceiptScreenWidget.extend({
     },
 });
 
+//Creating pos_order database to avoid the round trip to local storage
+
+module.pos_orders= module.PosBaseWidget.extend({ //shivam
+	
+	init:function(parent){
+		this._super(parent);
+		this.orders = [];
+		this.fetch_orders();
+	},
+	
+	fetch_orders:function(){
+		var self = this;
+		var model = new instance.web.Model('pos.order');
+		return model.call('fetch_pos_order',{
+			context:{}
+			}).done(function(data){
+				self.orders =  data
+		});
+	},
+});
+
 module.modify_orders = module.PosBaseWidget.extend({
 	init:function(parent){
 		this._super(parent);
@@ -494,8 +518,8 @@ module.modify_orders = module.PosBaseWidget.extend({
 		customer_id = [];
 		var d1 = new $.Deferred();
 		var details_order;
-		
-		_.each(self.get_checked_orders(),function(order){
+		orders_checked = self.get_checked_orders()
+		_.each(orders_checked,function(order){
 			if (order.checked){
 				list_orders.push($(order).parent().prev().text());
 				if ($(order).parent().children()[3]){
@@ -506,47 +530,19 @@ module.modify_orders = module.PosBaseWidget.extend({
 		if (customer_id.allValuesSame()){
 			var product_model = new instance.web.Model('product.product');
 			var model = new instance.web.Model('pos.order.line');
-			_.each(list_orders,function(order){
-				model.call('fields_get', {
-	        		context: {}
-	    		}).done(function(data){
-				model.query(_.keys(data)).filter([['order_id','=',parseInt(order)]]).context({}).all().done(function(res){
-					_.each(res,function(res){
-						product_model.call('fields_get',{
-	    					context:{}
-	    				}).done(function(product_data){
-	    					product_model.query(_.keys(product_data)).filter([['id','=',res.product_id[0]]]).context({}).all().done(function(product_object){
-	    						self.pos.get('selectedOrder').addProduct(product_object[0],{quantity:res.qty, price:res.price_unit, discount:res.discount, pos_id:res.id, available_qty:res.available_qty});
-						});
-					});        					
-				});
-			});	        	
-	    });			
-	});			
-}
-		else{
-			var product_model = new instance.web.Model('product.product');
-			var model = new instance.web.Model('pos.order.line');
-			model.call('fields_get', {
-        		context: {}
-    		}).done(function(data){
-			model.query(_.keys(data)).filter([['order_id','=',parseInt(list_orders[0])]]).context({}).all().done(function(res){
-				_.each(res,function(res){
-					product_model.call('fields_get',{
-    					context:{}
-    				}).done(function(product_data){
-    					product_model.query(_.keys(product_data)).filter([['id','=',res.product_id[0]]]).context({}).all().done(function(product_object){
-						self.pos.get('selectedOrder').addProduct(product_object[0],{quantity:res.qty,price:res.price_unit,discount:res.discount,pos_id:res.id});
-					});
-				});        					
+			_.each(orders_checked,function(res){
+				checked_id = $(res).val()
+				order = self.pos_widget.offline_pos_orders.orders[checked_id]
+				_.each(order.lines,function(line){
+					self.pos.get('selectedOrder').addProduct(line.product,{quantity:line.qty, price:line.price_unit, discount:line.discount, pos_id:line.id, available_qty:line.available_qty});
+				})
 			});
-		});	        	
-    });			
-}
-},
+		}
+		
+	},
 	
 	get_checked_orders:function(){
-		return $("input[name='sex'][type='checkbox']");
+		return $("input[name='sex'][type='checkbox']:checked");
 	}
 })    
 module.park_orders = module.PosBaseWidget.extend({
@@ -1050,9 +1046,10 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         $("#orders").append(QWeb.render('CorderScreenWidget'));
         this.disable_rubberbanding();
         this.enable_customize();
+        this.modify_orders_widget = new module.modify_orders(this);
+        this.offline_pos_orders = new module.pos_orders(this);//shivam
         this.get_order();
         this.park_order_widget = new module.park_orders(this, {"park_button": this.paypad.$el.children().last()});
-        this.modify_orders_widget = new module.modify_orders(this);
         self.$el.click(function(){
         	if ($(event.srcElement).attr('type') == 'radio'){
         		if ($("input[name='sex']:checked").length > 0){
@@ -1111,10 +1108,10 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
     switch_to_order:function(){
         var self = this;
         if (this.pos_widget.customer_id && self.pos_widget.mode == 'all'){
-        	self.get_order([['partner_id','=',parseInt(this.pos_widget.customer_id)]]);
+        	self.get_order(this.pos_widget.customer_id,['invoiced','done','paid','draft']);
         }
         else if (this.pos_widget.customer_id && self.pos_widget.mode == 'open'){
-        	self.get_order([['partner_id','=',parseInt(this.pos_widget.customer_id)],['state','=','draft']]);
+        	self.get_order(this.pos_widget.customer_id,['draft']);
         }
         else{
         	self.get_order();
@@ -1198,79 +1195,76 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
     	});
     	return order;
     },
-    get_order: function(dynamic_domain){
+    get_order: function(customer_id,args){ //shivam
     	var self = this;
-        
-    	if (dynamic_domain != undefined){
-    		var domain = dynamic_domain
-		}
-        else{
-        	var domain = [['state','in',['draft', 'done', 'paid']],['amount_total','>',0.00]];
-        }
-        var model = new instance.web.Model('pos.order');
-        model.call('fields_get', {
-            context: {}
-        }).done(function(data) {
-            model.query(_.keys(data)).filter(domain).context({}).all().done(function(res){
-        	$(".corder-list-contents").empty();
-        	_.each(res, function(rec){
+    	var model = new instance.web.Model('pos.order');
+    	$(".corder-list-contents").empty();
+    	if (customer_id && args){
+    		_.each(self.offline_pos_orders.orders, function(rec){
+	    		if (rec.partner_id[0] == parseInt(customer_id) && (args.indexOf(rec.state) != -1)){
+	    			console.log("nn ",rec.partner_id[0],parseInt(customer_id),(args.indexOf(rec.state) != -1));
+	    			$("#corder_pos").append(QWeb.render('CordersList',{'order':rec}));
+	    		}
+	       });    		    			
+    	}else{
+        	_.each(self.offline_pos_orders.orders, function(rec){
         		$("#corder_pos").append(QWeb.render('CordersList',{'order':rec}));
+           });    		
+    	}
+
+       $("#corder_pos").find("input[name='sex'][type='checkbox']").change(function(event) {
+    	   event.stopImmediatePropagation();
+    	   order = self.get_checked_order_details();
+    	   if (order.length !=0){
+    		   if (self.check_property_object(order,'customer_id') == 1){
+                   self.screen_selector.show_popup('error',{
+                       'message': _t('Error'),
+                       'comment': _t('Please select the orders with same customer'),
+                   });
+                   $(event.srcElement).prop('checked',false);
+                   return;
+    		   }
+    		   if (self.check_property_object(order,'state') == 1){
+                   self.screen_selector.show_popup('error',{
+                       'message': _t('Error'),
+                       'comment': _t('Please select the orders with same state'),
+                   });
+                   $(event.srcElement).prop('checked',false);
+                   return;
+    		   }           		   
+    	   }
+    	   
+    	   var checkboxes = document.querySelectorAll("input[name='sex'][type='checkbox']:checked");
+           _.each(checkboxes,function(record){
+         	  if (parseFloat($($(record).siblings()[3]).text().split("$")[1]) < 0){
+                  self.screen_selector.show_popup('error',{
+                      'message': _t('Error'),
+                      'comment': _t('Cannot pay or modify back order'),
+                  });
+                  $(record).prop("checked",false);
+        	  } 
            });
-           $("#corder_pos").find("input[name='sex'][type='checkbox']").change(function(event) {
-        	   event.stopImmediatePropagation();
-        	   order = self.get_checked_order_details();
-        	   if (order.length !=0){
-        		   if (self.check_property_object(order,'customer_id') == 1){
-                       self.screen_selector.show_popup('error',{
-                           'message': _t('Error'),
-                           'comment': _t('Please select the orders with same customer'),
-                       });
-                       $(event.srcElement).prop('checked',false);
-                       return;
-        		   }
-        		   if (self.check_property_object(order,'state') == 1){
-                       self.screen_selector.show_popup('error',{
-                           'message': _t('Error'),
-                           'comment': _t('Please select the orders with same state'),
-                       });
-                       $(event.srcElement).prop('checked',false);
-                       return;
-        		   }           		   
-        	   }
-        	   
-        	   var checkboxes = document.querySelectorAll("input[name='sex'][type='checkbox']:checked");
-               _.each(checkboxes,function(record){
-             	  if (parseFloat($($(record).siblings()[3]).text().split("$")[1]) < 0){
-                      self.screen_selector.show_popup('error',{
-                          'message': _t('Error'),
-                          'comment': _t('Cannot pay or modify back order'),
-                      });
-                      $(record).prop("checked",false);
-            	  } 
-               });
-        	   while(true){
-                   var order_line = self.pos.get('selectedOrder').get('orderLines').at(0);
-                   if (order_line){
-                       order_line.set_quantity("remove");
-                   }else{break;}
-               }        	   
-        	   self.order = new module.modify_orders(self);
-        	   self.order.show_product_on_select();
-        	   if (checkboxes.length > 0 ){
-        		   $("button:contains('Pay')").removeAttr('disabled');
-        	   }
-        	   if (checkboxes.length == 0 ){
-        		   $("button:contains('Pay')").attr('disabled','disabled');
-        	   }        	   
-        	   if (checkboxes.length != 1){
-        		   $("button:contains('Modify Order')").attr('disabled','disabled');
-        	   }
-        	   if (checkboxes.length == 1){
-        		   $("button:contains('Modify Order')").removeAttr('disabled');
-        	   }        	   
-           });
-        });
-    });
+    	   while(true){
+               var order_line = self.pos.get('selectedOrder').get('orderLines').at(0);
+               if (order_line){
+                   order_line.set_quantity("remove");
+               }else{break;}
+           }        	   
+    	   self.order = new module.modify_orders(self);
+    	   self.order.show_product_on_select();
+    	   if (checkboxes.length > 0 ){
+    		   $("button:contains('Pay')").removeAttr('disabled');
+    	   }
+    	   if (checkboxes.length == 0 ){
+    		   $("button:contains('Pay')").attr('disabled','disabled');
+    	   }        	   
+    	   if (checkboxes.length != 1){
+    		   $("button:contains('Modify Order')").attr('disabled','disabled');
+    	   }
+    	   if (checkboxes.length == 1){
+    		   $("button:contains('Modify Order')").removeAttr('disabled');
+    	   }        	   
+       });
     },
     clock: function(){
         var self = this;
@@ -1338,13 +1332,11 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
 });
 
 module.PaymentScreenWidget.include({
-
     validate_order: function(options) {
         var self = this;
         options = options || {};
         
         var currentOrder = this.pos.get('selectedOrder');
-
         if(currentOrder.get('orderLines').models.length === 0){
             this.pos_widget.screen_selector.show_popup('error',{
                 'message': _t('Empty Order'),
@@ -1382,11 +1374,9 @@ module.PaymentScreenWidget.include({
                 return;
             }
         }
-
         if (this.pos.config.iface_cashdrawer) {
                 this.pos.proxy.open_cashbox();
         }
-        
         if(options.invoice){
             // deactivate the validation button while we try to send the order
             this.pos_widget.action_bar.set_button_disabled('validation',true);
@@ -1406,6 +1396,7 @@ module.PaymentScreenWidget.include({
                         comment: _t('Check your internet connection and try again.'),
                     });
                 }
+                
                 self.pos_widget.action_bar.set_button_disabled('validation',false);
                 self.pos_widget.action_bar.set_button_disabled('invoice',false);
             });
@@ -1418,10 +1409,10 @@ module.PaymentScreenWidget.include({
 
         }else{
         	if (self.pos_widget.modify_orders_widget.pay_list.length > 0){
-        		var model = new instance.web.Model('pos.order');
         		if (currentOrder.getPaidTotal() >= currentOrder.getTotalTaxIncluded()){
         			var model = new instance.web.Model('pos.order')
-        			model.call('payment_recieved',[self.pos.cashregisters[0].journal_id[0], {'order_ids':self.pos_widget.modify_orders_widget.pay_list} , {'session_id':self.pos.pos_session.id}]).done(function(){
+        			model.call('payment_recieved',[self.pos.cashregisters[0].journal_id[0], {'order_ids':self.pos_widget.modify_orders_widget.pay_list} , {'session_id':self.pos.pos_session.id}]).then(function(){
+        				self.pos_widget.offline_pos_orders.orders[self.pos_widget.modify_orders_widget.pay_list]['state'] = 'paid';
         				self.pos_widget.modify_orders_widget.pay_list = [];
         	            if(self.pos.config.iface_print_via_proxy){
         	                var receipt = currentOrder.export_for_printing();
@@ -1432,8 +1423,14 @@ module.PaymentScreenWidget.include({
         	            }else{
         	                self.pos_widget.screen_selector.set_current_screen(self.next_screen);
         	            }
+        			},function(err,event){ //indicator
+        				event.preventDefault();
+        				self.pos_widget.offline_pos_orders.orders[self.pos_widget.modify_orders_widget.pay_list]['state'] == 'paid';
+        				console.log(self.pos_widget.offline_pos_orders.orders[self.pos_widget.modify_orders_widget.pay_list]);
+        	    		self.pos.get('selectedOrder').destroy();
+        	    		self.pos_widget.switch_to_order(); 
+        	    		self.pos_widget.modify_orders_widget.pay_list = [];
         			});
-        			
         		}
         		else{
         			self.pos_widget.screen_selector.show_popup('error',{
