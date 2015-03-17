@@ -15,8 +15,10 @@ class res_partner(osv.Model):
     def create(self, cr, uid, vals, context=None):
         if context is None:
             context = {}
-        vals['sequence'] = self.pool.get('ir.sequence').get(
-            cr, uid, 'res.partner')
+		print "==================================",vals
+        if not 'sequence' in vals or vals['sequence'] == '/':
+            vals['sequence'] = self.pool.get('ir.sequence').get(
+                cr, uid, 'res.partner')
         return super(res_partner, self).create(cr, uid, vals, context)
 
     def copy(self, cr, uid, id, default={}, context=None):

@@ -5,6 +5,21 @@ openerp.web_pos_custom = function(instance) {
     var round_di = instance.web.round_decimals;
     var round_pr = instance.web.round_precision;
     var cash_register = {};
+
+module.SynchNotificationWidget = module.SynchNotificationWidget.extend({
+    start: function(){
+        var self = this;
+        this.pos.bind('change:synch', function(pos,synch){
+            self.set_status(synch.state, synch.pending);
+        });
+        this.$el.click(function(){
+            self.pos.push_order();
+            self.pos.modify_order();
+            self.pos.pay_orders();
+        });
+    },
+});
+
 module.Order = module.Order.extend({
 
     addProduct: function(product, options){
@@ -101,7 +116,6 @@ module.Orderline = module.Orderline.extend({
         this.pos = options.pos;
         this.order = options.order;
         this.product = options.product;
-        console.log(options.product);
         this.price   = options.product.price;
         this.quantity = 1;
         this.quantityStr = '1';
@@ -201,23 +215,27 @@ module.Orderline = module.Orderline.extend({
         	var list_record = []
         	var model = new instance.web.Model('pos.order.line');
         	var model_order =  new instance.web.Model('pos.order');
-            var order_line = self.pos.get('selectedOrder').get('orderLines').at(0);
-     	    while(true){
-               var order_line = self.pos.get('selectedOrder').get('orderLines').at(0);
-               if (order_line){
+        	var currentOrder = self.pos.get('selectedOrder');
+        	var amount_total = currentOrder.getTotalTaxIncluded();
+        	while(true){
+                var order_line = self.pos.get('selectedOrder').get('orderLines').at(0);
+     	    	if (order_line){
             	   list_record.push({'available_qty':order_line.available_qty,
                    	'id':order_line.pos_id,
                    	'product_id':order_line.product.id,
                    	'price':order_line.price,
                       })
-                      self.pos_widget.offline_pos_orders.orders[order_id].lines[order_line.id].available_qty = order_line.available_qty; 
-            	   order_line.set_quantity("remove");
+                      self.pos_widget.offline_pos_orders.orders[order_id].lines[order_line.pos_id].available_qty = order_line.available_qty; 
+ 	    		order_line.set_quantity("remove");
                }else{break;}
            }
-     	    model_order.call('create_modify_order',[self.pos.cashregisters[0].journal_id[0],list_record,{'session_id':self.pos.pos_session.id}]).then(function(res){
+        	self.pos_widget.offline_pos_orders.orders[order_id].amount_total = amount_total
+     	   model_order.call('create_modify_order',[self.pos.cashregisters[0].journal_id[0],list_record,{'session_id':self.pos.pos_session.id}]).then(function(res){
      	    	return;
      	    },function(err,event){ //indicator
      	    	event.preventDefault();
+     	    	window.alert("Do not refresh the browser as the internet connection is down. Otherwise the modified data will be lost");
+     	    	self.pos_widget.offline_pos_orders.modify_orders.push([self.pos.cashregisters[0].journal_id[0],list_record,{'session_id':self.pos.pos_session.id}]);
      	    });
         },
         
@@ -229,6 +247,16 @@ module.Orderline = module.Orderline.extend({
                 	if(self.pos_name == "Pay"){
                 			var customer = [];
                 			flag = false;
+                        	var checkboxes = document.querySelectorAll("input[name='sex'][type='checkbox']:checked");
+                        	for(i=0;i<checkboxes.length;i++){
+                        		order = checkboxes[i];
+                        		if ($($(order).siblings()[0]).text() == 'unsaved'){
+                                    self.pos_widget.screen_selector.show_popup('error',{
+                                        message: _t('Unsaved Orders Cannot be Paid'),
+                                    });
+                                    return;
+                        		}                    		
+                        	}                			
                 			var order_id = parseInt($("input[name='sex'][type='checkbox']:checked").val());
                             _.each($("input[name=sex][type='checkbox']:checked"),function(line){
                             	if (! ($(line).parent().parent().hasClass('draft'))){
@@ -284,7 +312,17 @@ module.Orderline = module.Orderline.extend({
   	                  }
             		}
             		
-                    if (self.pos_name == "Modify Order"){ 
+                    if (self.pos_name == "Modify Order"){
+                    	var checkboxes = document.querySelectorAll("input[name='sex'][type='checkbox']:checked");
+                    	for(i=0;i<checkboxes.length;i++){
+                    		order = checkboxes[i];
+                    		if ($($(order).siblings()[0]).text() == 'unsaved'){
+                                self.pos_widget.screen_selector.show_popup('error',{
+                                    message: _t('Unsaved Orders Cannot be modified'),
+                                });
+                                return;
+                    		}                    		
+                    	}
                     	var currentOrder = self.pos.get('selectedOrder')
                     	self.pos_widget.available_qty = true;
                     	if (currentOrder.getTotalTaxIncluded() < 0){
@@ -397,11 +435,33 @@ module.Orderline = module.Orderline.extend({
             		}
             	}
 
+            	if (self.pos_name == 'Download All Orders'){
+            		$("div.clientlist-screen.screen").css("overflow","auto");
+            		self.pos_widget.customer_id = $("input[name='sex'][type='radio']:checked").val();
+            		var model = new instance.web.Model('pos.order');
+            		model.call('fetch_pos_order_domain',{ 
+            			context:{},
+            			domain:[['partner_id','=',self.pos_widget.customer_id]],
+            			}).then(function(data){
+            				_.each(data,function(order){
+            					if (self.pos_widget.offline_pos_orders.orders[order.id] == undefined){
+            						self.pos_widget.offline_pos_orders.orders[order.id] = order
+            					}
+            				});
+                    		self.pos_widget.mode = 'all'
+                			self.pos_widget.switch_to_order();
+        			},function(err,event){
+        				window.alert("Not able to download any orders as the Internet Connection is down");
+        				event.preventDefault();
+        			});
+            	} 
+            	
             	if(self.pos_name == 'Show All Orders'){
+            		window.alert("Only those orders will be displayed which were downloaded during intitalization or the new orders made for this customer in the present session");
             		$("div.clientlist-screen.screen").css("overflow","auto");
             		self.pos_widget.customer_id = $("input[name='sex'][type='radio']:checked").val();
             		self.pos_widget.mode = 'all'
-            		$("li > a:contains('Orders')")[0].click();
+        			self.pos_widget.switch_to_order();
             	}
             	
             	if (self.pos_name == "Show Open Orders"){
@@ -490,6 +550,8 @@ module.pos_orders= module.PosBaseWidget.extend({ //shivam
 	init:function(parent){
 		this._super(parent);
 		this.orders = [];
+		this.modify_orders = [];
+		this.pay_list = [];
 		this.fetch_orders();
 	},
 	
@@ -518,7 +580,7 @@ module.modify_orders = module.PosBaseWidget.extend({
 		customer_id = [];
 		var d1 = new $.Deferred();
 		var details_order;
-		orders_checked = self.get_checked_orders()
+		orders_checked = self.get_checked_orders();
 		_.each(orders_checked,function(order){
 			if (order.checked){
 				list_orders.push($(order).parent().prev().text());
@@ -699,7 +761,7 @@ instance.point_of_sale.ClientListScreenWidget = instance.point_of_sale.ClientLis
                         if(confirm("Are You sure to select this custemer")){
                             var currentOrder = self.pos.get('selectedOrder');
                             currentOrder.set_client(self.pos.db.get_partner_by_id(custmer_id));
-                            self.pos.push_order(currentOrder);
+                            self.pos.push_order(currentOrder); //working
                             self.pos.get('selectedOrder').destroy();
                             $("#myTab li :eq(0) a").click();
                         }else{
@@ -915,8 +977,156 @@ instance.point_of_sale.UsernameWidget = instance.point_of_sale.UsernameWidget.ex
         },
 });
 
+instance.point_of_sale.PosModel = instance.point_of_sale.PosModel.extend({
+    _flush_orders: function(orders, options) {
+        var self = this;
+        this.set('synch',{ state: 'connecting', pending: orders.length});
+
+        return self._save_to_server(orders, options).done(function (server_ids) {
+            var pending = self.db.get_orders().length;
+            self.set('synch', {
+                state: pending ? 'connecting' : 'connected',
+                pending: pending
+            });
+            return server_ids;
+        });
+    },
+
+    // send an array of orders to the server
+    // available options:
+    // - timeout: timeout for the rpc call in ms
+    // returns a deferred that resolves with the list of
+    // server generated ids for the sent orders
+    _save_to_server: function (orders, options) {
+        if (!orders || !orders.length) {
+            var result = $.Deferred();
+            result.resolve([]);
+            return result;
+        }
+            
+        options = options || {};
+
+        var self = this;
+        var timeout = typeof options.timeout === 'number' ? options.timeout : 7500 * orders.length;
+
+        // we try to send the order. shadow prevents a spinner if it takes too long. (unless we are sending an invoice,
+        // then we want to notify the user that we are waiting on something )
+        var posOrderModel = new instance.web.Model('pos.order');
+        return posOrderModel.call('create_from_ui',
+            [_.map(orders, function (order) {
+            	order.to_invoice = options.to_invoice || false;
+                return order;
+            })],
+            undefined,
+            {
+                shadow: !options.to_invoice,
+                timeout: timeout
+            }
+        ).then(function (server_ids) {
+            _.each(orders, function (order) {
+                self.db.remove_order(order.id);
+                delete self.pos_widget.offline_pos_orders.orders[order.id];
+            });
+            _.each(server_ids,function(order){
+            	self.pos_widget.offline_pos_orders.orders[order.id] = order
+            });
+            
+            return server_ids;
+        }).fail(function (error, event){
+            if(error.code === 200 ){    // Business Logic Error, not a connection problem
+                self.pos_widget.screen_selector.show_popup('error-traceback',{
+                    message: error.data.message,
+                    comment: error.data.debug
+                });
+            }
+            // prevent an error popup creation by the rpc failure
+            // we want the failure to be silent as we send the orders in the background
+            event.preventDefault();
+            console.error('Failed to send orders:', orders);
+        });
+    },
+	add_order:function(order){
+    	var self = this;
+    	var today = new Date();
+    	if (!(order.name in self.pos_widget.offline_pos_orders.orders)){
+    		var line_list = {}
+    		for(i=0;i<order.lines.length;i++){
+    			line_list[i] = {
+                        'id': i,
+                        'qty':order.lines[i][2].qty,
+                        'price_unit':order.lines[i][2].price_unit,
+                        'discount':order.lines[i][2].discount,
+                        'available_qty':order.lines[i][2].qty,
+                        'return_qty':0,
+                        'product':self.db.product_by_id[order.lines[i][2].product_id],
+    			}
+    		}
+    		self.pos_widget.offline_pos_orders.orders[order.name.split(' ')[1]] = {
+    				'id':undefined,
+    				'state':'unsaved',
+    				'name':order.name,
+    				'date_order':today.getFullYear() + '-' + parseInt(today.getMonth()+1) + '-' + today.getDate()+ ' ',
+    				'amount_total':order.amount_total,
+    				'partner_id':undefined,
+    				'sequence_partner':undefined,
+    				'lines': line_list,
+    		}
+    	}else{
+    		console.log("The order already exists in Database");
+    		return;
+    	}
+    },
+    pay_orders:function(){
+    	var self =this;
+    	var model = new instance.web.Model('pos.order')
+		if (self.pos_widget.offline_pos_orders && self.pos_widget.offline_pos_orders.pay_list){
+	    	model.call('offline_payment_recieved',[self.pos_widget.offline_pos_orders.pay_list]).then(function(){
+				self.pos_widget.offline_pos_orders.pay_list.length = 0;
+			},function(err,event){
+				event.preventDefault();
+			});  				
+		}
+    },
+    
+    modify_order:function(){
+    	var self =this;
+    	var model = new instance.web.Model('pos.order')
+    	if (self.pos_widget.offline_pos_orders && self.pos_widget.offline_pos_orders.modify_orders){
+    		model.call('create_modify_order_list',[self.pos_widget.offline_pos_orders.modify_orders]).then(function(){
+    			self.pos_widget.offline_pos_orders.modify_orders.length = 0;
+    		},function(err,event){
+    			event.preventDefault();
+    		});  	    		
+    	}
+    },
+    
+	push_order: function(order) { //indicator
+        var self = this;
+        if(order){
+            this.proxy.log('push_order',order.export_as_JSON());
+            this.db.add_order(order.export_as_JSON());
+            this.add_order(order.export_as_JSON());
+        }
+        var pushed = new $.Deferred();
+        this.flush_mutex.exec(function(){
+            var flushed = self._flush_orders(self.db.get_orders());
+            flushed.always(function(ids){
+            	pushed.resolve();
+            });
+        });
+        return pushed;
+    },
+});
+
 instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
-    build_widgets: function() {
+    start:function(){
+    	var self = this;
+    	this._super();
+    	self.pos.modify_order();
+    	self.pos.pay_orders();
+    },
+    
+	build_widgets: function() {
         var self = this;
         // --------  Screens ---------
 
@@ -998,7 +1208,7 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         this.customer_paypad.replace(this.$('.placeholder-PaypadWidget-customer'));
         
         this.customer_paypad_order = 
-            new module.PaypadWidget(this, {template:'CustomerPaypadButtonWidget', screen:"customers", buttons:["Show Open Orders", "Show All Orders","Clear Customer Selection"]});
+            new module.PaypadWidget(this, {template:'CustomerPaypadButtonWidget', screen:"customers", buttons:["Show Open Orders", "Show All Orders","Download All Orders","Clear Customer Selection"]});
         this.customer_paypad_order.replace(this.$('.placeholder-PaypadWidget-customer-order'));        
         
         this.order_paypad = 
@@ -1077,6 +1287,8 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
     switch_to_product:function(){
         var self = this;
         var ss = self.pos.pos_widget.screen_selector;
+        $("a[data-toggle='tab']").parent().removeClass('active');
+        $("a[data-toggle='tab'][href='#products']").parent().addClass('active');
         ss.set_current_screen('products');
         $(".rightpane-header .searchbox").hide();
         $(".rightpane-header #search_products").show();
@@ -1091,6 +1303,8 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         var self = this;
         var ss = self.pos.pos_widget.screen_selector;
         ss.set_current_screen('clientlist');
+        $("a[data-toggle='tab']").parent().removeClass('active');
+        $("a[data-toggle='tab'][href='#customers']").parent().addClass('active');
         $("input[name='sex'][type='radio']").prop("checked",false);
 	    $("button:contains('Show Open Orders')").attr('disabled','disabled');
 	    $("button:contains('Show All Orders')").attr('disabled','disabled');
@@ -1118,6 +1332,8 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         }
         this.pos_widget.customer_id = undefined;
         this.pos_widget.mode = undefined;
+        $("a[data-toggle='tab']").parent().removeClass('active');
+        $("a[data-toggle='tab'][href='#orders']").parent().addClass('active');
         $("#corder_pos").show();
         $("button:contains('Modify Order')").attr('disabled','disabled');
         $("button:contains('Pay')").attr('disabled','disabled');
@@ -1202,7 +1418,6 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
     	if (customer_id && args){
     		_.each(self.offline_pos_orders.orders, function(rec){
 	    		if (rec.partner_id[0] == parseInt(customer_id) && (args.indexOf(rec.state) != -1)){
-	    			console.log("nn ",rec.partner_id[0],parseInt(customer_id),(args.indexOf(rec.state) != -1));
 	    			$("#corder_pos").append(QWeb.render('CordersList',{'order':rec}));
 	    		}
 	       });    		    			
@@ -1298,7 +1513,9 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         function close(){
             if (confirm(_t("Are you sure?"))){
                 self.pos.push_order().then(function(){
-                    instance.jsonRpc("/poscustom/close", "session_close", {}).then(function(res){
+                    self.pos.modify_order();
+                    self.pos.pay_orders();
+                	instance.jsonRpc("/poscustom/close", "session_close", {}).then(function(res){
                         if (res.is_user){
                             return instance.web.logout();
                         }
@@ -1407,12 +1624,14 @@ module.PaymentScreenWidget.include({
                 self.pos.get('selectedOrder').destroy();
             });
 
-        }else{
+        }else{  
         	if (self.pos_widget.modify_orders_widget.pay_list.length > 0){
         		if (currentOrder.getPaidTotal() >= currentOrder.getTotalTaxIncluded()){
         			var model = new instance.web.Model('pos.order')
+        			_.each(self.pos_widget.modify_orders_widget.pay_list,function(item){
+        				self.pos_widget.offline_pos_orders.orders[item]['state'] = 'paid';        				
+        			})
         			model.call('payment_recieved',[self.pos.cashregisters[0].journal_id[0], {'order_ids':self.pos_widget.modify_orders_widget.pay_list} , {'session_id':self.pos.pos_session.id}]).then(function(){
-        				self.pos_widget.offline_pos_orders.orders[self.pos_widget.modify_orders_widget.pay_list]['state'] = 'paid';
         				self.pos_widget.modify_orders_widget.pay_list = [];
         	            if(self.pos.config.iface_print_via_proxy){
         	                var receipt = currentOrder.export_for_printing();
@@ -1426,10 +1645,12 @@ module.PaymentScreenWidget.include({
         			},function(err,event){ //indicator
         				event.preventDefault();
         				self.pos_widget.offline_pos_orders.orders[self.pos_widget.modify_orders_widget.pay_list]['state'] == 'paid';
-        				console.log(self.pos_widget.offline_pos_orders.orders[self.pos_widget.modify_orders_widget.pay_list]);
-        	    		self.pos.get('selectedOrder').destroy();
+        				self.pos_widget.offline_pos_orders.pay_list.push(
+        						{'journal_id':self.pos.cashregisters[0].journal_id[0],'order_ids':self.pos_widget.modify_orders_widget.pay_list,'session_id':self.pos.pos_session.id}
+        				)
+        				self.pos_widget.offline_pos_orders.pay_list = _.uniq(self.pos_widget.offline_pos_orders.pay_list, 'order_ids')
+        				self.pos.get('selectedOrder').destroy();
         	    		self.pos_widget.switch_to_order(); 
-        	    		self.pos_widget.modify_orders_widget.pay_list = [];
         			});
         		}
         		else{

@@ -8,6 +8,7 @@ from openerp.tools.translate import _
 
 import openerp.addons.decimal_precision as dp
 import openerp.addons.product.product
+from pychart.tick_mark import Null
 
 _logger = logging.getLogger(__name__)
 
@@ -33,22 +34,11 @@ _logger = logging.getLogger(__name__)
 
 class pos_order(osv.osv):
     _inherit = "pos.order"
-
-    def fetch_pos_order(self,cr,uid,context = None):
+    
+    def add_order_object(self,cr,uid,list_ids,context=None):
         data = {}
-        id_list = []
-        cr.execute('''
-            select id from pos_order where state in ('invoiced','paid','done') and amount_total > 0 limit 1000
-        ''')
-        
-#         [(5,), (9,), (3,), (2,), (10,), (1,), (7,), (6,), (4,)]
-        id_list.extend(cr.fetchall())
-        cr.execute('''
-            select id from pos_order where state = 'draft' 
-        ''')
-        id_list.extend(cr.fetchall())
-        if id_list:
-            for order in self.browse(cr,uid,[x[0] for x in id_list]):
+        if list_ids:
+            for order in self.browse(cr,uid,list_ids,context):
                 line_list = {}
                 for line in order.lines:
                     product_id = line.product_id
@@ -68,13 +58,13 @@ class pos_order(osv.osv):
                                                'id':product_id.id,
                                                'list_price':product_id.list_price,
                                                'mes_type':product_id.mes_type,
-                                               'pos_categ_id':[product_id.pos_categ_id and product_id.pos_categ_id.id or False,product_id.pos_categ_id and product_id.pos_categ_id.name or False],
+                                               'pos_categ_id':[product_id.pos_categ_id and product_id.pos_categ_id.id or None,product_id.pos_categ_id and product_id.pos_categ_id.name or None],
                                                'price':product_id.price,
                                                'product_tmpl_id':product_id.product_tmpl_id.id,
                                                'taxes_id':[x.id for x in product_id.taxes_id],
-                                               'uom_id':[product_id.uom_id and product_id.uom_id.id or False, product_id.uom_id and product_id.uom_id.name or False],
+                                               'uom_id':[product_id.uom_id and product_id.uom_id.id or None, product_id.uom_id and product_id.uom_id.name or None],
                                                'uos_coeff':product_id.uos_coeff,
-                                                'uos_id':product_id.uos_id and product_id.uos_id.id or False
+                                                'uos_id':product_id.uos_id and product_id.uos_id.id or None
                                                 }
                                            }
                                       })
@@ -89,7 +79,48 @@ class pos_order(osv.osv):
                                          'lines':line_list
                                          }
                              })
-        return data
+        return data        
+    
+    def fetch_pos_order_domain(self,cr,uid,domain,context=None):
+        id_list = []
+        query = '''select id from pos_order where '''
+        
+        for dom in domain:
+            query += ''.join(dom)
+        cr.execute(query)
+        id_list.extend(cr.fetchall())
+        if id_list:
+            return self.add_order_object(cr,uid,[x[0] for x in id_list],context)        
+        return
+    
+    def fetch_pos_order(self,cr,uid,context = None):
+        id_list = []
+        cr.execute('''
+            select id from pos_order where state = 'draft' 
+        ''')
+        id_list.extend(cr.fetchall())
+        
+        cr.execute('''
+            select id from pos_order where state in ('invoiced','paid','done') and amount_total > 0 limit 1000
+        ''')
+        
+#         [(5,), (9,), (3,), (2,), (10,), (1,), (7,), (6,), (4,)]
+        id_list.extend(cr.fetchall())
+
+        if id_list:
+            return self.add_order_object(cr,uid,[x[0] for x in id_list],context)
+        return {}
+    
+    def offline_payment_recieved(self,cr,uid,pay_list,context=None):
+        for pay in pay_list:
+            for order in pay.get('order_ids',False):
+                self.payment_recieved(cr, uid, pay.get('journal_id',False),{'order_ids':[int(order)]},{'session_id':pay.get('session_id',False)})
+        return True
+    
+    def create_modify_order_list(self,cr,uid,list_order,context=None):
+        for order in list_order:
+            self.create_modify_order(cr,uid,order[0],order[1],context = {'session_id':order[2].get('session_id',False)})
+        return True
     
     def create_modify_order(self,cr,uid,journal_id,list_record,context=None):
         line_obj = self.pool.get('pos.order.line')
@@ -260,7 +291,7 @@ class pos_order(osv.osv):
                 }, context=context)
             order_ids.append(order_id)
             if orders[0]['data'].get('partner_id'):
-                return order_ids
+                return self.add_order_object(cr, uid, order_ids, context)
             try:
                 self.signal_workflow(cr, uid, [order_id], 'paid')
             except Exception as e:
@@ -270,8 +301,7 @@ class pos_order(osv.osv):
                 self.action_invoice(cr, uid, [order_id], context)
                 order_obj = self.browse(cr, uid, order_id, context)
                 self.pool['account.invoice'].signal_workflow(cr, uid, [order_obj.invoice_id.id], 'invoice_open')
-
-        return order_ids
+        return self.add_order_object(cr, uid, order_ids, context)
     
         
 class pos_order_line(osv.osv):
