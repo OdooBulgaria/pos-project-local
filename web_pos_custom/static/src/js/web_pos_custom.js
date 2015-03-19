@@ -718,7 +718,7 @@ module.Orderline = module.Orderline.extend({
             		}
             	}
 
-            	if(self.pos_name == 'Show All Orders'){
+            	if(self.pos_name == 'All Downloaded Orders'){
             		$("div.clientlist-screen.screen").css("overflow","auto");
             		self.pos_widget.customer_id = $("input[name='sex'][type='radio']:checked").val();
             		self.pos_widget.mode = 'all'
@@ -738,7 +738,7 @@ module.Orderline = module.Orderline.extend({
         				$(record).prop("checked",false);
         			}) ;
         	        $("button:contains('Modify Customer')").attr('disabled','disabled');
-        	        $("button:contains('Show All Orders')").attr('disabled','disabled');
+        	        $("button:contains('All Downloaded Orders')").attr('disabled','disabled');
         	        $("button:contains('Show Open Orders')").attr('disabled','disabled');
         	        
             	}
@@ -1568,7 +1568,7 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         this.customer_paypad.replace(this.$('.placeholder-PaypadWidget-customer'));
         
         this.customer_paypad_order = 
-            new module.PaypadWidget(this, {template:'CustomerPaypadButtonWidget', screen:"customers", buttons:["Show Open Orders", "Show All Orders","Clear Customer Selection"]});
+            new module.PaypadWidget(this, {template:'CustomerPaypadButtonWidget', screen:"customers", buttons:["Show Open Orders", "All Downloaded Orders","Clear Customer Selection"]});
         this.customer_paypad_order.replace(this.$('.placeholder-PaypadWidget-customer-order'));        
         
         this.order_paypad = 
@@ -1625,7 +1625,7 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         	if ($(target).attr('type') == 'radio'){
         		if ($("input[name='sex']:checked").length > 0){
         			$("button:contains('Show Open Orders')").removeAttr('disabled');
-        		    $("button:contains('Show All Orders')").removeAttr('disabled');        			
+        		    $("button:contains('All Downloaded Orders')").removeAttr('disabled');        			
         		    $("button:contains('Modify Customer')").removeAttr('disabled');
         		}
         	} 
@@ -1668,7 +1668,7 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         $("a[data-toggle='tab'][href='#customers']").parent().addClass('active');
         $("input[name='sex'][type='radio']").prop("checked",false);
 	    $("button:contains('Show Open Orders')").attr('disabled','disabled');
-	    $("button:contains('Show All Orders')").attr('disabled','disabled');
+	    $("button:contains('All Downloaded Orders')").attr('disabled','disabled');
 	    $("button:contains('Modify Customer')").attr('disabled','disabled');
         $(".rightpane-header .category-list-custom").hide();
         $(".rightpane-header .breadcrumb").hide();
