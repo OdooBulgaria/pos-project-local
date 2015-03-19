@@ -1620,8 +1620,9 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         this.offline_pos_orders = new module.pos_orders(this);//shivam
         this.get_order();
         this.park_order_widget = new module.park_orders(this, {"park_button": this.paypad.$el.children().last()});
-        self.$el.click(function(){
-        	if ($(event.srcElement).attr('type') == 'radio'){
+        self.$el.click(function(event){
+            var target = event.target || event.srcElement;
+        	if ($(target).attr('type') == 'radio'){
         		if ($("input[name='sex']:checked").length > 0){
         			$("button:contains('Show Open Orders')").removeAttr('disabled');
         		    $("button:contains('Show All Orders')").removeAttr('disabled');        			

@@ -149,10 +149,573 @@ box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
 .pos .draft{
     background-color: #FFB6C1;
 }
-.pos .paid{
-    background-color: #cccccc ;
-}
-
 .pos .unsaved{
     background-color: red ;
 }
+
+.pos .paid{
+    background-color: #cccccc ;
+}
+.pos .pos-leftpane{
+    width: 30%;
+}
+.pos .rightpane{
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 30%;
+    right: 0;
+}
+.pos .searchbox{
+      display: block;
+      width: 38%;
+}
+
+/* Responsive */
+
+@media only screen and (max-width: 600px){
+    .pos .screen{
+        max-height: 1024px;
+    }
+    .pos .pos-branding{
+        width: 24%;
+    }
+    .pos .pos-rightheader {
+        left: 165px !important;
+        position: absolute;
+        right: 0;
+        top: 0;
+    }
+    .pos .pos-rightheader .username {
+        font-size: 14px;
+        margin-right: 4px;
+    }
+    .pos .pos-rightheader .clock {
+        font-size: 12px;
+        margin-right: 14px;
+    }
+    .pos .pos-rightheader .header-button{
+        font-size: 13px;
+    }
+    .pos .order .orderline{
+        padding: 1px 14px 23px;
+        font-size: 14px;
+    } 
+    .col-md-11{
+        width: 85%;
+        margin-top: 8px;
+    }
+    .col-xs-1 {
+        left: 335px;
+        position: relative;
+        top: -66%;
+        width: 8.33333%;
+    }
+    .pos .client-line {
+        width: 96%;
+        font-size: 11px;
+    }
+    .pos .well{
+        padding: 4px;
+        margin-top: 4px;
+    }
+    .pos .product{
+        float: left;
+        margin-left: 10px;
+        margin-right: -2px !important;
+        width: 106px;
+    }
+    .pos .product .product-img{
+        width: 100px;
+    }
+
+
+    .pos .pos-leftpane{
+        border-right: none;
+    }
+    .pos .category-simple-button{
+        font-size: 10px;
+        width: 16%;
+    }
+    .pos .rightpane-header{
+          margin-top: 50px;
+    }
+    .pos .searchbox{
+        position: fixed;
+        top: 46px;
+        left: 179px;
+    }
+
+    .pos .searchbox input{
+          width: 410px;
+    }
+    .pos .breadcrumb-homeimg{
+        width: 27px;
+        margin: 12px 1px;
+    }
+    .rightpane .breadcrumb{
+        margin-bottom: 8px;
+    }
+    .pos .breadcrumb-back {
+        margin: 8px;
+    }
+    .pos .order{
+        margin-right: 7px;
+        margin-left: 7px;
+        margin-top: 0px;
+    }
+    .pos .category-list-custom {
+        margin-top: 1px;
+        display: inline;
+        float: none;
+    }
+    .pos .order .orderline.selected{
+        font-size: 13px;
+    }
+    .pos .numpad {
+        float: left;
+        width: 192px;
+    }
+    .pos .numpad button { 
+        float: left;
+        margin: 3px 1px 2px;
+        width: 43px;
+    }
+    .pos .paypad {
+        float: right;
+        margin-top: 4px;
+        width: 175px;
+        position: relative;
+        top: -55%;
+        left: 11%;
+    }
+
+    .pos #customer-down-panel .paypad{
+        width: 320px;
+        margin-top: 4px;
+        position: relative;
+        top: 2%;
+        left:1%;
+    }
+    .pos #order-down-panel .paypad{
+        float:left;
+        width: 290px;
+        position: relative;
+        margin-top: 4px;
+        top: 0;
+        left: 15%;
+    }
+    .pos .clientlist-screen .customer-list{
+        font-size: 14px;
+    }
+    .screen .screen-content{
+        width: 95%;
+    }
+    .pos .clientlist-screen .client-details{
+        width: 95%;
+    }
+    .pos .clientlist-screen .edit-buttons {
+        position: absolute;
+        right: 45px;
+        top: 23px;
+    }
+    .pos .clientlist-screen .client-details-right{
+        float: left;
+    }
+    .pos .clientlist-screen .client-details input.client-sequence{
+        float:left;
+        width: 130%;
+    }
+    .pos .clientlist-screen .client-details-left{
+        float:none;
+    }
+    .pos .clientlist-screen .client-details input.client-name{
+        font-size: 12px;
+        width: 130%;
+    }
+    .pos .clientlist-screen .client-details input.client-address-street{
+        font-size: 12px;
+        width: 130%;
+    }
+    .pos .clientlist-screen .client-details input.client-email{
+        font-size: 12px;
+        width: 130%;
+    }
+    .pos .clientlist-screen .client-details input.client-address-street2{
+        font-size: 12px;
+        width: 130%;
+    }
+    .pos .clientlist-screen .edit-buttons .button{
+        font-size: 33px;
+    }
+        
+}
+@media only screen and (min-width: 768px) and (max-width: 959px){
+    .pos .screen{
+        max-height: 1024px;
+    }
+    .clientlist-screen.screen{
+        margin-top: 15px;
+    }
+    .pos .pos-branding {
+        width: 28%;
+    }
+    .pos .pos-rightheader{
+        position: absolute;
+        left:240px !important;
+        top:0;
+        height: 100%;
+    }
+    .pos .order{
+        font-size: 14px;
+        margin: 4px;
+    }
+    .pos .order .orderline{
+        padding: 3px 15px 19px;
+    }
+    .pos .breadcrumb-button{
+        padding: 0  2px;
+    }
+    .pos .rightpane-header{
+        position: relative;
+        top: 50px;
+        margin-bottom: 32px;
+    }
+    .pos .searchbox {
+        position: relative;
+        bottom: 120px;
+        left: 0;           
+    }
+    .pos .searchbox input{
+        width: 258%;
+    }
+    .pos .breadcrumb-button{
+        padding: 0 10px;
+        margin-left: 18px;
+    }
+    .pos .breadcrumb-button-back{
+        padding: 0 8px;
+    }
+    .pos .product-list-container {
+        bottom: 0;
+        left: 0;
+        position: absolute;
+        right: 0;
+        top: 17px;
+    }
+    .pos .product-list-scroller {
+        box-sizing: border-box;
+        width: 84%;
+    }
+    .pos .category-list-custom {
+        margin-top: 1px;
+        display: inline;
+        float: none;
+    }
+    .col-xs-1 {
+        bottom: 66%;
+        float: right;
+        font-size: 15px;
+        left: 83%;
+        position: relative;
+    }
+    .col-md-11{
+        margin-top: 13px;
+    }
+    .pos .product-list {
+        text-align: center;
+    }
+    .pos .screen .content-calculate {
+        float: left;
+        height: 40%;
+        margin-top: -8px;
+        margin-left: 20px;
+    }
+     #search_customers{
+        position: relative;
+        bottom: 52px;
+        left: 0;
+    }
+    .pos .client-line {
+        margin-top: 6px;
+        width: 82%;
+        font-size: 13px;
+    }
+    .pos .clientlist-screen .client-details {
+        width: 82%;
+    }
+
+
+    .pos .clientlist-screen .edit-buttons {
+        right: 3px;
+        top: -13px;
+    }
+    .pos .clientlist-screen .client-details-right{
+        float: left;
+    }
+    .pos .clientlist-screen .client-details input.client-sequence{
+        float:left;
+        width: 130%;
+    }
+    .pos .clientlist-screen .client-details-left{
+        float:none;
+    }
+    .pos .clientlist-screen .client-details input.client-name{
+        font-size: 14px;
+        width: 130%;
+    }
+    .pos .clientlist-screen .client-details input.client-address-street{
+        font-size: 14px;
+        width: 130%;
+    }
+    .pos .clientlist-screen .client-details input.client-email{
+        font-size: 14px;
+        width: 130%;
+    }
+    .pos .clientlist-screen .client-details input.client-address-street2{
+        font-size: 14px;
+        width: 130%;
+    }
+    .pos .pos-rightheader .header-button{
+        font-size: 15px;
+    }
+    
+    .pos .category-simple-button{
+        background-color: #f2f2f2;
+        border: 1px solid black;
+        color: black;
+        cursor: pointer;
+        display: inline;
+        flex-grow: 1;
+        float: left;
+        font-size: 12px;
+        line-height: normal;
+        margin: 10px 2px 2px;
+        padding: 5px;
+        position: relative;
+        width: 13%;
+        }
+
+}
+
+
+@media only screen and (min-width: 960px ) and (max-width: 1023px){
+    .clientlist-screen.screen{
+        margin-top: 15px;
+    }
+    .pos .pos-branding{
+        width: 28%;
+    }
+    .pos .pos-rightheader{
+        left: 40% !important;
+    }
+    .pos .pos-rightheader .header-button{
+        font-size: 15px;
+    }
+    .breadcrumb{
+        margin-bottom: 12px !important;
+    }
+    .pos .searchbox input {
+        width: 90%;
+        margin: 4px -8px 4px 4px;
+    }
+    .pos .product{
+        float:left;
+        width: 132px;
+    }
+    .pos .product-list-scroller{
+        width: 87%;
+    }
+    .pos .product-list{
+        text-align: center;
+        width: 101%;
+    }
+    .col-xs-1{
+        left: -38px;
+        bottom: 41%;
+        float: right !important;
+    }
+    .pos .screen .content-calculate {
+        float: left;
+        margin-left: 64px;
+        margin-top: 7px;
+    }
+    .pos .well{
+        padding: 6px;
+    }
+    .pos .client-line {
+        margin-top: 4px;
+        width: 84%;
+        font-size: 14px;
+    }
+    .pos .numpad button{
+        height: 44px;
+    }
+    .pos .screen .content-calculate{
+        margin-left: 81px;
+    }
+    .pos .clientlist-screen .client-details {
+        width: 82%;
+    }
+    .pos .clientlist-screen .edit-buttons {
+        right: -10px;
+        top: -13px;
+    }
+    .pos .clientlist-screen .client-details-right{
+        float: left;
+    }
+    .pos .clientlist-screen .client-details input.client-sequence{
+        float:left;
+        width: 145%;
+    }
+    .pos .clientlist-screen .client-details-left{
+        float:none;
+    }
+    .pos .clientlist-screen .client-details input.client-name{
+        font-size: 14px;
+        width: 145%;
+    }
+    .pos .clientlist-screen .client-details input.client-address-street{
+        font-size: 14px;
+        width: 145%;
+    }
+    .pos .clientlist-screen .client-details input.client-email{
+        font-size: 14px;
+        width: 145%;
+    }
+    .pos .clientlist-screen .client-details input.client-address-street2{
+        font-size: 14px;
+        width: 145%;
+    }
+    .pos .clientlist-screen .edit-buttons .button{
+        font-size: 33px;
+    }
+}
+
+
+
+@media only screen and (min-width: 1024px ) and (max-width: 1280px){
+
+    .pos .pos-branding{
+        width: 28.5%;
+    }
+    .pos .pos-rightheader{
+        width: 61%;
+        left: 39% !important;
+        position: absolute;
+        right: 0;
+        top: 0;
+    }
+    .pos .rightpane-header{
+        margin-bottom: 15px;
+    }
+    .pos .pos-rightheader .username{
+        font-size: 17px;
+        margin-right: 20px;
+    }
+    .pos .pos-rightheader .clock{
+        font-size: 13px;
+    }
+    .pos .pos-rightheader .header-button{
+        font-size: 16px;
+    }
+    .pos .searchbox input {
+        width: 240px;
+        font-size: 16px;
+        margin: 4px;
+        padding: 7px 20px 8px 38px;
+    }
+    .pos .product{
+        width:22%;
+        height: 125px;
+        margin: 5px 0px 5px 0px;
+        float:left;
+    }
+    .pos .product-list-container{
+        width: 95%;
+    }
+    .pos .product-list {
+        padding: 2px 2px 2px 20px;
+        text-align: center;
+        width: 104%;
+    }
+    .pos .product-list-scroller{
+        height: 100%;
+    }
+   .pos .client-line {
+        width: 103%;
+        font-size: 13px;
+    }
+    .col-md-11{
+        width: 85%;
+    }
+    .col-xs-1 {
+        font-size: 15px;
+        position: relative;
+        left: -5%;
+        top: 42px;
+    }
+    .pos .numpad,
+    .pos .paypad{
+        margin-top: 1%;
+    }
+
+    .pos .numpad button{
+        height: 40px;
+    }
+    #customers .screen .screen-content{
+        width: 95%;
+        margin-left: 0;
+    }
+
+    .pos .clientlist-screen .customer-list {
+        font-size: 14px;
+        padding-top: 1px;
+        width: 95%;
+    }
+    .nav-tabs > li {
+        float: right;
+        margin-bottom: -1px;
+        margin-right: -100%;
+    }
+    #myTab .sideways{
+        position: relative;
+        top: -36px;
+    }
+    .pos .clientlist-screen .client-details {
+        width: 90%;
+    }
+    .client-details-box{
+        margin-top: 13px;
+    }
+    .pos .clientlist-screen .edit-buttons{
+        position: relative;
+        top: 4px;
+        left: -44px;
+    }
+    .pos .clientlist-screen .client-details input.client-sequence{
+        width: 99%;
+    }
+    .pos .clientlist-screen .client-details input.client-name {
+        float: left;
+        font-size: 14px;
+        width: 100%;
+    }
+    .pos .clientlist-screen .client-details input.client-address-street{
+        float: left;
+        font-size: 14px;
+        width: 100%;
+    }
+    .pos .clientlist-screen .client-details input.client-email{
+        width: 100%;
+        font-size: 14px;
+        margin-left: 20px;
+    }
+    .pos .clientlist-screen .client-details input.client-address-street2{
+        width: 100%;
+        font-size: 14px;
+        margin-left: 20px;
+    }
+
+}
+
