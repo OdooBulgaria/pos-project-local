@@ -642,7 +642,7 @@ module.Orderline = module.Orderline.extend({
                         }
                         
                     }
-                	if (self.pos_name == 'Download All Orders'){
+                	if (self.pos_name == 'Download All Older Orders'){
                 		$("div.clientlist-screen.screen").css("overflow","auto");
                 		self.pos_widget.customer_id = $("input[name='sex'][type='radio']:checked").val();
                 		var model = new instance.web.Model('pos.order');
@@ -723,7 +723,7 @@ module.Orderline = module.Orderline.extend({
             		self.pos_widget.customer_id = $("input[name='sex'][type='radio']:checked").val();
             		self.pos_widget.mode = 'all'
         			self.pos_widget.switch_to_order();
-            		$("button:contains('Download All Orders')").removeClass('oe_hidden');
+            		$("button:contains('Download All Older Orders')").removeClass('oe_hidden');
             	}
             	
             	if (self.pos_name == "Show Open Orders"){
@@ -1572,7 +1572,7 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         this.customer_paypad_order.replace(this.$('.placeholder-PaypadWidget-customer-order'));        
         
         this.order_paypad = 
-            new module.PaypadWidget(this, {template:'OrderPaypadButtonWidget', screen:"orders", buttons:["Pay", "Modify Order","Clear Selection","Download All Orders"]});
+            new module.PaypadWidget(this, {template:'OrderPaypadButtonWidget', screen:"orders", buttons:["Pay", "Modify Order","Clear Selection","Download All Older Orders"]});
         this.order_paypad.replace(this.$('.placeholder-PaypadWidget-order-right'));
         
         this.numpad = new module.NumpadWidget(this);
@@ -1707,7 +1707,7 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         $("div.screen-content").css("position","relative");
         $("div[name='screen'].tab-pane").removeClass("active");
         $("div#orders").addClass("active");
-        $("button:contains('Download All Orders')").addClass('oe_hidden');
+        $("button:contains('Download All Older Orders')").addClass('oe_hidden');
         var search_timeout = null;
     },
     enable_customize: function(){
