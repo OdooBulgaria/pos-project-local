@@ -263,8 +263,9 @@
     </t>
     <t t-name="ClientLine">
         <div class="client-line well col-md-12" t-att-data-id='partner.id'>
-            <div class="col-md-3" style="padding-right:0;">Name:&amp;nbsp; <b><t t-esc="partner.name"/></b></div>
-            <div class="col-md-6" style="padding-right:0;">|&amp;nbsp;&amp;nbsp;E-mail:&amp;nbsp;&amp;nbsp; <b><t t-esc="partner.email"/></b></div>
+            <div class="col-md-4" style="padding-right:0;">Name:&amp;nbsp; <b><t t-esc="partner.name"/></b></div>
+            <div class="col-md-3" style="padding-right:0;">|&amp;nbsp;&amp;nbsp;Customer ID:&amp;nbsp;&amp;nbsp; <b><t t-esc="partner.sequence or ''"/></b></div>
+            <div class="col-md-5" style="padding-right:0;">|&amp;nbsp;&amp;nbsp;Phone No.:&amp;nbsp;&amp;nbsp; <b><t t-esc="partner.phone or ''"/></b></div>
             <div class="col-md-3" style="padding-right:0;">|&amp;nbsp;<input type="radio" name="sex" t-att-value='partner.id'/>&amp;nbsp;<a><b style="color:#00A8E6;">Select Customer</b></a></div>
         </div>
     </t>
@@ -423,7 +424,7 @@
         	<div name="id" style="display:none"><span t-esc="order.id"></span></div>
             <div>
             <div name='state' class="oe_hidden"><span t-esc = "order.state"></span></div>
-            Order#&amp;nbsp;<b name = "order"><t t-esc="order.name"/></b>&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;Date:&amp;nbsp;<b name="date"><t t-esc="order.date_order.split(' ')[0]"/></b>&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;Payment:&amp;nbsp;<b name = "payment">$<t t-esc="order.amount_total"/></b>&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;Customer Id:&amp;nbsp;<b name = "customer_sequence"><t t-if="order.partner_id" t-esc="order.sequence_partner"/><t t-if="!order.partner_id">N/A</t></b>&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;Customer Name:&amp;nbsp;<b name = "customer_name" ><t t-if="order.partner_id" t-esc="order.partner_id[1]"/><t t-if="!order.partner_id">N/A</t></b>&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;|&amp;nbsp;&amp;nbsp;<input type="checkbox" name="sex" t-att-value="order.id or order.name.split(' ')[1] or ''"/>&amp;nbsp;&amp;nbsp;<a><b style="color:#00A8E6;">Select Order</b></a><b style="display:none" name = "customer_id"><t t-if="order.partner_id" t-esc="order.partner_id[0]"/></b></div>
+            Order#&amp;nbsp;<b name = "order"><t t-esc="order.name"/></b>&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;Date:&amp;nbsp;<b name="date"><t t-esc="order.date_order.split(' ')[0]"/></b>&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;Payment:&amp;nbsp;<b name = "payment">$<t t-esc="order.amount_total.toFixed(2)"/></b>&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;Customer Id:&amp;nbsp;<b name = "customer_sequence"><t t-if="order.partner_id" t-esc="order.sequence_partner or 'N/A'"/><t t-if="!order.partner_id">N/A</t></b>&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;Customer Name:&amp;nbsp;<b name = "customer_name" ><t t-if="order.partner_id" t-esc="order.partner_id[1] or 'N/A'"/><t t-if="!order.partner_id">N/A</t></b>&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;|&amp;nbsp;&amp;nbsp;<input type="checkbox" name="sex" t-att-value="order.id or order.name.split(' ')[1] or ''"/>&amp;nbsp;&amp;nbsp;<a><b style="color:#00A8E6;">Select Order</b></a><b style="display:none" name = "customer_id"><t t-if="order.partner_id" t-esc="order.partner_id[0]"/></b></div>
         </div>
     </t>
 

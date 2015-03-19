@@ -75,7 +75,7 @@ class pos_order(osv.osv):
                                          'date_order':order.date_order,
                                          'amount_total':order.amount_total,
                                          'partner_id':[order.partner_id.id,order.partner_id.name],
-                                         'sequence_partner':order.sequence_partner,
+                                         'sequence_partner':order.sequence_partner or None,
                                          'lines':line_list
                                          }
                              })
@@ -99,9 +99,8 @@ class pos_order(osv.osv):
             select id from pos_order where state = 'draft' 
         ''')
         id_list.extend(cr.fetchall())
-        
         cr.execute('''
-            select id from pos_order where state in ('invoiced','paid','done') and amount_total > 0 limit 1000
+            select id from pos_order where state in ('invoiced','paid','done') and amount_total > 0 and date_order between symmetric now()::timestamp without time zone and now()::timestamp without time zone - interval '7 days'
         ''')
         
 #         [(5,), (9,), (3,), (2,), (10,), (1,), (7,), (6,), (4,)]

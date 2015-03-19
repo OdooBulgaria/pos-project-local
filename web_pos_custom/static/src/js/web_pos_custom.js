@@ -6,7 +6,277 @@ openerp.web_pos_custom = function(instance) {
     var round_pr = instance.web.round_precision;
     var cash_register = {};
 
-module.SynchNotificationWidget = module.SynchNotificationWidget.extend({
+module.PosDB =  module.PosDB.extend({
+    _partner_search_string: function(partner){
+        var str =  partner.name;
+        if (partner.sequence){
+        	str+= '|'+partner.sequence;
+        }
+        if(partner.ean13){
+            str += '|' + partner.ean13;
+        }
+        if(partner.address){
+            str += '|' + partner.address;
+        }
+        if(partner.phone){
+            str += '|' + partner.phone.split(' ').join('');
+        }
+        if(partner.mobile){
+            str += '|' + partner.mobile.split(' ').join('');
+        }
+        if(partner.email){
+            str += '|' + partner.email;
+        }
+        str = '' + partner.id + ':' + str.replace(':','') + '\n';
+        return str;
+    },	
+});  
+    
+module.PosModel = module.PosModel.extend({
+    models: [
+             {
+                 model:  'res.users',
+                 fields: ['name','company_id'],
+                 ids:    function(self){ return [self.session.uid]; },
+                 loaded: function(self,users){ self.user = users[0]; },
+             },{ 
+                 model:  'res.company',
+                 fields: [ 'currency_id', 'email', 'website', 'company_registry', 'vat', 'name', 'phone', 'partner_id' , 'country_id'],
+                 ids:    function(self){ return [self.user.company_id[0]] },
+                 loaded: function(self,companies){ self.company = companies[0]; },
+             },{
+                 model:  'decimal.precision',
+                 fields: ['name','digits'],
+                 loaded: function(self,dps){
+                     self.dp  = {};
+                     for (var i = 0; i < dps.length; i++) {
+                         self.dp[dps[i].name] = dps[i].digits;
+                     }
+                 },
+             },{ 
+                 model:  'product.uom',
+                 fields: [],
+                 domain: null,
+                 loaded: function(self,units){
+                     self.units = units;
+                     var units_by_id = {};
+                     for(var i = 0, len = units.length; i < len; i++){
+                         units_by_id[units[i].id] = units[i];
+                         units[i].groupable = ( units[i].category_id[0] === 1 );
+                         units[i].is_unit   = ( units[i].id === 1 );
+                     }
+                     self.units_by_id = units_by_id;
+                 }
+             },{
+                 model:  'res.users',
+                 fields: ['name','ean13'],
+                 domain: null,
+                 loaded: function(self,users){ self.users = users; },
+             },{
+                 model:  'res.partner',
+                 fields: ['name','street','street2','sequence','city','state_id','country_id','vat','phone','zip','mobile','email','ean13','write_date'],
+                 domain: [['customer','=',true]],
+                 loaded: function(self,partners){
+                     self.partners = partners;
+                     self.db.add_partners(partners);
+                 },
+             },{
+                 model:  'res.country',
+                 fields: ['name'],
+                 loaded: function(self,countries){
+                     self.countries = countries;
+                     self.company.country = null;
+                     for (var i = 0; i < countries.length; i++) {
+                         if (countries[i].id === self.company.country_id[0]){
+                             self.company.country = countries[i];
+                         }
+                     }
+                 },
+             },{
+                 model:  'account.tax',
+                 fields: ['name','amount', 'price_include', 'include_base_amount', 'type'],
+                 domain: null,
+                 loaded: function(self,taxes){ 
+                     self.taxes = taxes; 
+                     self.taxes_by_id = {};
+                     for (var i = 0; i < taxes.length; i++) {
+                         self.taxes_by_id[taxes[i].id] = taxes[i];
+                     }
+                 },
+             },{
+                 model:  'pos.session',
+                 fields: ['id', 'journal_ids','name','user_id','config_id','start_at','stop_at','sequence_number','login_number'],
+                 domain: function(self){ return [['state','=','opened'],['user_id','=',self.session.uid]]; },
+                 loaded: function(self,pos_sessions){
+                     self.pos_session = pos_sessions[0]; 
+
+                     var orders = self.db.get_orders();
+                     for (var i = 0; i < orders.length; i++) {
+                         self.pos_session.sequence_number = Math.max(self.pos_session.sequence_number, orders[i].data.sequence_number+1);
+                     }
+                 },
+             },{
+                 model: 'pos.config',
+                 fields: [],
+                 domain: function(self){ return [['id','=', self.pos_session.config_id[0]]]; },
+                 loaded: function(self,configs){
+                     self.config = configs[0];
+                     self.config.use_proxy = self.config.iface_payment_terminal || 
+                                             self.config.iface_electronic_scale ||
+                                             self.config.iface_print_via_proxy  ||
+                                             self.config.iface_scan_via_proxy   ||
+                                             self.config.iface_cashdrawer;
+                     
+                     self.barcode_reader.add_barcode_patterns({
+                         'product':  self.config.barcode_product,
+                         'cashier':  self.config.barcode_cashier,
+                         'client':   self.config.barcode_customer,
+                         'weight':   self.config.barcode_weight,
+                         'discount': self.config.barcode_discount,
+                         'price':    self.config.barcode_price,
+                     });
+
+                     if (self.config.company_id[0] !== self.user.company_id[0]) {
+                         throw new Error(_t("Error: The Point of Sale User must belong to the same company as the Point of Sale. You are probably trying to load the point of sale as an administrator in a multi-company setup, with the administrator account set to the wrong company."));
+                     }
+                 },
+             },{
+                 model: 'stock.location',
+                 fields: [],
+                 ids:    function(self){ return [self.config.stock_location_id[0]]; },
+                 loaded: function(self, locations){ self.shop = locations[0]; },
+             },{
+                 model:  'product.pricelist',
+                 fields: ['currency_id'],
+                 ids:    function(self){ return [self.config.pricelist_id[0]]; },
+                 loaded: function(self, pricelists){ self.pricelist = pricelists[0]; },
+             },{
+                 model: 'res.currency',
+                 fields: ['symbol','position','rounding','accuracy'],
+                 ids:    function(self){ return [self.pricelist.currency_id[0]]; },
+                 loaded: function(self, currencies){
+                     self.currency = currencies[0];
+                     if (self.currency.rounding > 0) {
+                         self.currency.decimals = Math.ceil(Math.log(1.0 / self.currency.rounding) / Math.log(10));
+                     } else {
+                         self.currency.decimals = 0;
+                     }
+
+                 },
+             },{
+                 model: 'product.packaging',
+                 fields: ['ean','product_tmpl_id'],
+                 domain: null,
+                 loaded: function(self, packagings){ 
+                     self.db.add_packagings(packagings);
+                 },
+             },{
+                 model:  'pos.category',
+                 fields: ['id','name','parent_id','child_id','image'],
+                 domain: null,
+                 loaded: function(self, categories){
+                     self.db.add_categories(categories);
+                 },
+             },{
+                 model:  'product.product',
+                 fields: ['display_name', 'list_price','price','pos_categ_id', 'taxes_id', 'ean13', 'default_code', 
+                          'to_weight', 'uom_id', 'uos_id', 'uos_coeff', 'mes_type', 'description_sale', 'description',
+                          'product_tmpl_id'],
+                 domain: [['sale_ok','=',true],['available_in_pos','=',true]],
+                 context: function(self){ return { pricelist: self.pricelist.id, display_default_code: false }; },
+                 loaded: function(self, products){
+                     self.db.add_products(products);
+                 },
+             },{
+                 model:  'account.bank.statement',
+                 fields: ['account_id','currency','journal_id','state','name','user_id','pos_session_id'],
+                 domain: function(self){ return [['state', '=', 'open'],['pos_session_id', '=', self.pos_session.id]]; },
+                 loaded: function(self, bankstatements, tmp){
+                     self.bankstatements = bankstatements;
+
+                     tmp.journals = [];
+                     _.each(bankstatements,function(statement){
+                         tmp.journals.push(statement.journal_id[0]);
+                     });
+                 },
+             },{
+                 model:  'account.journal',
+                 fields: [],
+                 domain: function(self,tmp){ return [['id','in',tmp.journals]]; },
+                 loaded: function(self, journals){
+                     self.journals = journals;
+
+                     // associate the bank statements with their journals. 
+                     var bankstatements = self.bankstatements;
+                     for(var i = 0, ilen = bankstatements.length; i < ilen; i++){
+                         for(var j = 0, jlen = journals.length; j < jlen; j++){
+                             if(bankstatements[i].journal_id[0] === journals[j].id){
+                                 bankstatements[i].journal = journals[j];
+                             }
+                         }
+                     }
+                     self.cashregisters = bankstatements;
+                 },
+             },{
+                 label: 'fonts',
+                 loaded: function(self){
+                     var fonts_loaded = new $.Deferred();
+
+                     // Waiting for fonts to be loaded to prevent receipt printing
+                     // from printing empty receipt while loading Inconsolata
+                     // ( The font used for the receipt ) 
+                     waitForWebfonts(['Lato','Inconsolata'], function(){
+                         fonts_loaded.resolve();
+                     });
+
+                     // The JS used to detect font loading is not 100% robust, so
+                     // do not wait more than 5sec
+                     setTimeout(function(){
+                         fonts_loaded.resolve();
+                     },5000);
+
+                     return fonts_loaded;
+                 },
+             },{
+                 label: 'pictures',
+                 loaded: function(self){
+                     self.company_logo = new Image();
+                     var  logo_loaded = new $.Deferred();
+                     self.company_logo.onload = function(){
+                         var img = self.company_logo;
+                         var ratio = 1;
+                         var targetwidth = 300;
+                         var maxheight = 150;
+                         if( img.width !== targetwidth ){
+                             ratio = targetwidth / img.width;
+                         }
+                         if( img.height * ratio > maxheight ){
+                             ratio = maxheight / img.height;
+                         }
+                         var width  = Math.floor(img.width * ratio);
+                         var height = Math.floor(img.height * ratio);
+                         var c = document.createElement('canvas');
+                             c.width  = width;
+                             c.height = height
+                         var ctx = c.getContext('2d');
+                             ctx.drawImage(self.company_logo,0,0, width, height);
+
+                         self.company_logo_base64 = c.toDataURL();
+                         logo_loaded.resolve();
+                     };
+                     self.company_logo.onerror = function(){
+                         logo_loaded.reject();
+                     };
+                         self.company_logo.crossOrigin = "anonymous";
+                     self.company_logo.src = '/web/binary/company_logo' +'?_'+Math.random();
+
+                     return logo_loaded;
+                 },
+             },
+             ],
+});
+    
+module.SynchNotificationWidget = module.SynchNotificationWidget.extend({ //working
     start: function(){
         var self = this;
         this.pos.bind('change:synch', function(pos,synch){
@@ -372,6 +642,26 @@ module.Orderline = module.Orderline.extend({
                         }
                         
                     }
+                	if (self.pos_name == 'Download All Orders'){
+                		$("div.clientlist-screen.screen").css("overflow","auto");
+                		self.pos_widget.customer_id = $("input[name='sex'][type='radio']:checked").val();
+                		var model = new instance.web.Model('pos.order');
+                		model.call('fetch_pos_order_domain',{ 
+                			context:{},
+                			domain:[['partner_id','=',self.pos_widget.customer_id]],
+                			}).then(function(data){
+                				_.each(data,function(order){
+                					if (self.pos_widget.offline_pos_orders.orders[order.id] == undefined){
+                						self.pos_widget.offline_pos_orders.orders[order.id] = order
+                					}
+                				});
+                        		self.pos_widget.mode = 'all'
+                    			self.pos_widget.switch_to_order();
+            			},function(err,event){
+            				window.alert("Not able to download any orders as the Internet Connection is down");
+            				event.preventDefault();
+            			});
+                	} 
                     if (self.pos_name == "Park Order"){
                         var order_lines = [];
                         while(true){
@@ -398,22 +688,16 @@ module.Orderline = module.Orderline.extend({
             		var custmer_id = parseInt($("input[name='sex']:checked").val());
             		if (custmer_id){
                         var partner = self.pos.db.get_partner_by_id(custmer_id);
-                        model.call('read',[custmer_id,['sequence','street2']]).done(function(record){
-                        	partner.sequence = record.sequence;
-                        	partner.street2 = record.street2;
+                        	console.log(partner)
                             $(".clientlist-screen .full-content:visible").hide();
                             var client_edit = $(QWeb.render('ClientDetailsEditNewModify',{widget:self.pos_widget.clientlist_screen, partner:partner}));
                             var contents = $(".clientlist-screen");
                             contents.append(client_edit);
-                            contents.off('click','.button.save'); 
-                            contents.off('click','.button.undo');
                             contents.on('click','.button.save',function(){ self.pos_widget.clientlist_screen.save_client_details(partner); 
                             $("tr#customer-down-panel").show();
                             $("div.screen-content").css("position","relative");
-//                            $("a[href='#orders']:contains('Orders')").show();
                             });
                             contents.on('click','.button.undo',function(){
-//                            	$("a[href='#orders']:contains('Orders')").show();
                             	self.pos_widget.clientlist_screen.undo_client_details(partner); 
                             	$("tr#customer-down-panel").show();
                             	$("div.screen-content").css("position","relative");
@@ -431,37 +715,15 @@ module.Orderline = module.Orderline.extend({
                             $("i.fa.fa-undo").click(function(){
                             	$("div.screen-content").css("position","relative");
                             });		                                		                    
-                        });
             		}
             	}
 
-            	if (self.pos_name == 'Download All Orders'){
-            		$("div.clientlist-screen.screen").css("overflow","auto");
-            		self.pos_widget.customer_id = $("input[name='sex'][type='radio']:checked").val();
-            		var model = new instance.web.Model('pos.order');
-            		model.call('fetch_pos_order_domain',{ 
-            			context:{},
-            			domain:[['partner_id','=',self.pos_widget.customer_id]],
-            			}).then(function(data){
-            				_.each(data,function(order){
-            					if (self.pos_widget.offline_pos_orders.orders[order.id] == undefined){
-            						self.pos_widget.offline_pos_orders.orders[order.id] = order
-            					}
-            				});
-                    		self.pos_widget.mode = 'all'
-                			self.pos_widget.switch_to_order();
-        			},function(err,event){
-        				window.alert("Not able to download any orders as the Internet Connection is down");
-        				event.preventDefault();
-        			});
-            	} 
-            	
             	if(self.pos_name == 'Show All Orders'){
-            		window.alert("Only those orders will be displayed which were downloaded during intitalization or the new orders made for this customer in the present session");
             		$("div.clientlist-screen.screen").css("overflow","auto");
             		self.pos_widget.customer_id = $("input[name='sex'][type='radio']:checked").val();
             		self.pos_widget.mode = 'all'
         			self.pos_widget.switch_to_order();
+            		$("button:contains('Download All Orders')").removeClass('oe_hidden');
             	}
             	
             	if (self.pos_name == "Show Open Orders"){
@@ -548,20 +810,46 @@ module.ReceiptScreenWidget = module.ReceiptScreenWidget.extend({
 module.pos_orders= module.PosBaseWidget.extend({ //shivam
 	
 	init:function(parent){
+		var self =this;
 		this._super(parent);
 		this.orders = [];
+		this.defer = new $.Deferred;
 		this.modify_orders = [];
 		this.pay_list = [];
 		this.fetch_orders();
+		this.order_search_string = {}
+		this.defer.done(function(){
+			_.each(self.orders,function(order){
+				str = ""
+				if (order.name && order.name != 'false'){
+					str += order.name   ;
+				}
+				if (order.sequence_partner && order.sequence_partner != 'false'){
+					str += " | " +  order.sequence_partner ;
+				}
+				if (order.date_order && order.date_order != 'false'){
+					str += " | " + order.date_order ;
+				}
+				if (order.partner_id && order.partner_id[1] != false){
+					str += " | " + order.partner_id ;
+				}
+				self.order_search_string[order.id] = this.str
+			});
+			return;
+		});
 	},
-	
+	search_string:function(){
+		var self =this;
+	},
 	fetch_orders:function(){
 		var self = this;
 		var model = new instance.web.Model('pos.order');
 		return model.call('fetch_pos_order',{
 			context:{}
 			}).done(function(data){
-				self.orders =  data
+				self.orders =  data;
+				self.defer.resolve()
+				
 		});
 	},
 });
@@ -748,20 +1036,18 @@ instance.point_of_sale.ClientListScreenWidget = instance.point_of_sale.ClientLis
                 var clientline = document.createElement('tbody');
                 clientline.innerHTML = clientline_html;
                 clientline = clientline.childNodes[1];
-
                 if( partners === this.new_client ){
                     clientline.classList.add('highlight');
                 }else{
                     clientline.classList.remove('highlight');
                 }
-                
                 $(clientline).find("input[name=sex]").change(function(event) {
                     var custmer_id = parseInt($('input[name=sex]:checked').val());
                     if (!$("ul.orderlines li").first().hasClass('empty') && custmer_id){
-                        if(confirm("Are You sure to select this custemer")){
+                        if(confirm("Are you sure about the selection")){
                             var currentOrder = self.pos.get('selectedOrder');
                             currentOrder.set_client(self.pos.db.get_partner_by_id(custmer_id));
-                            self.pos.push_order(currentOrder); //working
+                            self.pos.push_order(currentOrder); 
                             self.pos.get('selectedOrder').destroy();
                             $("#myTab li :eq(0) a").click();
                         }else{
@@ -770,7 +1056,6 @@ instance.point_of_sale.ClientListScreenWidget = instance.point_of_sale.ClientLis
                     }
                 });
                 contents.appendChild(clientline);
-                
             }
         },
     save_client_details: function(partner) {
@@ -978,7 +1263,82 @@ instance.point_of_sale.UsernameWidget = instance.point_of_sale.UsernameWidget.ex
 });
 
 instance.point_of_sale.PosModel = instance.point_of_sale.PosModel.extend({
-    _flush_orders: function(orders, options) {
+
+    initialize: function(session, attributes) {
+        Backbone.Model.prototype.initialize.call(this, attributes);
+        var  self = this;
+        this.session = session;                 
+        this.flush_mutex = new $.Mutex();                   // used to make sure the orders are sent to the server once at time
+        this.pos_widget = attributes.pos_widget;
+
+        this.proxy = new module.ProxyDevice(this);              // used to communicate to the hardware devices via a local proxy
+        this.barcode_reader = new module.BarcodeReader({'pos': this, proxy:this.proxy, patterns: {}});  // used to read barcodes
+        this.proxy_queue = new module.JobQueue();           // used to prevent parallels communications to the proxy
+        this.db = new module.PosDB();                       // a local database used to search trough products and categories & store pending orders
+        this.debug = jQuery.deparam(jQuery.param.querystring()).debug !== undefined;    //debug mode 
+        
+        // Business data; loaded from the server at launch
+        this.accounting_precision = 2; //TODO
+        this.company_logo = null;
+        this.company_logo_base64 = '';
+        this.currency = null;
+        this.shop = null;
+        this.company = null;
+        this.user = null;
+        this.users = [];
+        this.partners = [];
+        this.cashier = null;
+        this.cashregisters = [];
+        this.bankstatements = [];
+        this.taxes = [];
+        this.pos_session = null;
+        this.config = null;
+        this.units = [];
+        this.units_by_id = {};
+        this.pricelist = null;
+        this.order_sequence = 1;
+        window.posmodel = this;
+        
+        // these dynamic attributes can be watched for change by other models or widgets
+        this.set({
+            'synch':            { state:'connected', pending:0 }, 
+            'orders':           new module.OrderCollection(),
+            'selectedOrder':    null,
+        });
+        this.bind('change:synch',function(pos,synch){
+        	clearTimeout(self.synch_timeout);
+            self.synch_timeout = setTimeout(function(){
+                if(synch.state !== 'disconnected' && synch.pending > 0){
+                    self.set('synch',{state:'disconnected', pending:synch.pending});
+                }
+            },3000);
+        });
+        setInterval(function(){
+        	var a = navigator.onLine;
+        	if (a){
+        		self.set('synch',{state:'connected', pending:self.get('synch').pending});
+        	}else{
+        		self.set('synch',{state:'disconnected', pending:self.get('synch').pending});
+        	}
+        },1000)
+
+        this.get('orders').bind('remove', function(order,_unused_,options){ 
+            self.on_removed_order(order,options.index,options.reason); 
+        });
+        
+        // We fetch the backend data on the server asynchronously. this is done only when the pos user interface is launched,
+        // Any change on this data made on the server is thus not reflected on the point of sale until it is relaunched. 
+        // when all the data has loaded, we compute some stuff, and declare the Pos ready to be used. 
+        this.ready = this.load_server_data()
+            .then(function(){
+                if(self.config.use_proxy){
+                    return self.connect_to_proxy();
+                }
+            });
+        
+    },	
+	
+	_flush_orders: function(orders, options) {
         var self = this;
         this.set('synch',{ state: 'connecting', pending: orders.length});
 
@@ -1033,8 +1393,8 @@ instance.point_of_sale.PosModel = instance.point_of_sale.PosModel.extend({
             
             return server_ids;
         }).fail(function (error, event){
-            if(error.code === 200 ){    // Business Logic Error, not a connection problem
-                self.pos_widget.screen_selector.show_popup('error-traceback',{
+        	if(error.code === 200 ){    // Business Logic Error, not a connection problem
+        		self.pos_widget.screen_selector.show_popup('error-traceback',{
                     message: error.data.message,
                     comment: error.data.debug
                 });
@@ -1208,11 +1568,11 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         this.customer_paypad.replace(this.$('.placeholder-PaypadWidget-customer'));
         
         this.customer_paypad_order = 
-            new module.PaypadWidget(this, {template:'CustomerPaypadButtonWidget', screen:"customers", buttons:["Show Open Orders", "Show All Orders","Download All Orders","Clear Customer Selection"]});
+            new module.PaypadWidget(this, {template:'CustomerPaypadButtonWidget', screen:"customers", buttons:["Show Open Orders", "Show All Orders","Clear Customer Selection"]});
         this.customer_paypad_order.replace(this.$('.placeholder-PaypadWidget-customer-order'));        
         
         this.order_paypad = 
-            new module.PaypadWidget(this, {template:'OrderPaypadButtonWidget', screen:"orders", buttons:["Pay", "Modify Order","Clear Selection"]});
+            new module.PaypadWidget(this, {template:'OrderPaypadButtonWidget', screen:"orders", buttons:["Pay", "Modify Order","Clear Selection","Download All Orders"]});
         this.order_paypad.replace(this.$('.placeholder-PaypadWidget-order-right'));
         
         this.numpad = new module.NumpadWidget(this);
@@ -1270,7 +1630,7 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         	} 
         });
         $(document).bind('DOMSubtreeModified',function(){
-      	  if ($($("ul.orderlines").children()[0]).hasClass("empty")){
+         if ($($("ul.orderlines").children()[0]).hasClass("empty")){
       		  $("button.paypad-button:contains('Pay Cash')").attr("disabled","disabled")
       		  $("button.paypad-button:contains('Park Order')").attr("disabled","disabled")
       		  $("button.paypad-button:contains('Credit Customer')").attr("disabled","disabled")
@@ -1345,19 +1705,9 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         $("#order-down-panel").show();
         $("div.screen-content").css("position","relative");
         $("div[name='screen'].tab-pane").removeClass("active");
-        $("div#orders").addClass("active");        	  
+        $("div#orders").addClass("active");
+        $("button:contains('Download All Orders')").addClass('oe_hidden');
         var search_timeout = null;
-        $('#search_orders input').on('keyup',function(event){
-          var query = this.value;
-        _.each($("tbody#corder_pos").children(),function(line){
-        	if ($(line).find("b[name = 'customer_name']").text().match(query)){
-        		$(line).removeClass('oe_hidden');
-        	}
-        	else{
-        		$(line).addClass('oe_hidden');
-        	}
-        });
-      });
     },
     enable_customize: function(){
         var self = this;
@@ -1411,6 +1761,63 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
     	});
     	return order;
     },
+
+    change_event:function(customer_id,args){
+        var self = this;
+    	$("#corder_pos").find("input[name='sex'][type='checkbox']").change(function(event) {
+     	   event.stopImmediatePropagation();
+     	   order = self.get_checked_order_details();
+     	   if (order.length !=0){
+     		   if (self.check_property_object(order,'customer_id') == 1){
+                    self.screen_selector.show_popup('error',{
+                        'message': _t('Error'),
+                        'comment': _t('Please select the orders with same customer'),
+                    });
+                    $(event.srcElement).prop('checked',false);
+                    return;
+     		   }
+     		   if (self.check_property_object(order,'state') == 1){
+                    self.screen_selector.show_popup('error',{
+                        'message': _t('Error'),
+                        'comment': _t('Please select the orders with same state'),
+                    });
+                    $(event.srcElement).prop('checked',false);
+                    return;
+     		   }           		   
+     	   }
+     	   
+     	   var checkboxes = document.querySelectorAll("input[name='sex'][type='checkbox']:checked");
+            _.each(checkboxes,function(record){
+          	  if (parseFloat($($(record).siblings()[3]).text().split("$")[1]) < 0){
+                   self.screen_selector.show_popup('error',{
+                       'message': _t('Error'),
+                       'comment': _t('Cannot pay or modify back order'),
+                   });
+                   $(record).prop("checked",false);
+         	  } 
+            });
+     	   while(true){
+                var order_line = self.pos.get('selectedOrder').get('orderLines').at(0);
+                if (order_line){
+                    order_line.set_quantity("remove");
+                }else{break;}
+            }        	   
+     	   self.order = new module.modify_orders(self);
+     	   self.order.show_product_on_select();
+     	   if (checkboxes.length > 0 ){
+     		   $("button:contains('Pay')").removeAttr('disabled');
+     	   }
+     	   if (checkboxes.length == 0 ){
+     		   $("button:contains('Pay')").attr('disabled','disabled');
+     	   }        	   
+     	   if (checkboxes.length != 1){
+     		   $("button:contains('Modify Order')").attr('disabled','disabled');
+     	   }
+     	   if (checkboxes.length == 1){
+     		   $("button:contains('Modify Order')").removeAttr('disabled');
+     	   }        	   
+        });
+    },
     get_order: function(customer_id,args){ //shivam
     	var self = this;
     	var model = new instance.web.Model('pos.order');
@@ -1426,61 +1833,23 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         		$("#corder_pos").append(QWeb.render('CordersList',{'order':rec}));
            });    		
     	}
-
-       $("#corder_pos").find("input[name='sex'][type='checkbox']").change(function(event) {
-    	   event.stopImmediatePropagation();
-    	   order = self.get_checked_order_details();
-    	   if (order.length !=0){
-    		   if (self.check_property_object(order,'customer_id') == 1){
-                   self.screen_selector.show_popup('error',{
-                       'message': _t('Error'),
-                       'comment': _t('Please select the orders with same customer'),
-                   });
-                   $(event.srcElement).prop('checked',false);
-                   return;
-    		   }
-    		   if (self.check_property_object(order,'state') == 1){
-                   self.screen_selector.show_popup('error',{
-                       'message': _t('Error'),
-                       'comment': _t('Please select the orders with same state'),
-                   });
-                   $(event.srcElement).prop('checked',false);
-                   return;
-    		   }           		   
-    	   }
-    	   
-    	   var checkboxes = document.querySelectorAll("input[name='sex'][type='checkbox']:checked");
-           _.each(checkboxes,function(record){
-         	  if (parseFloat($($(record).siblings()[3]).text().split("$")[1]) < 0){
-                  self.screen_selector.show_popup('error',{
-                      'message': _t('Error'),
-                      'comment': _t('Cannot pay or modify back order'),
-                  });
-                  $(record).prop("checked",false);
-        	  } 
-           });
-    	   while(true){
-               var order_line = self.pos.get('selectedOrder').get('orderLines').at(0);
-               if (order_line){
-                   order_line.set_quantity("remove");
-               }else{break;}
-           }        	   
-    	   self.order = new module.modify_orders(self);
-    	   self.order.show_product_on_select();
-    	   if (checkboxes.length > 0 ){
-    		   $("button:contains('Pay')").removeAttr('disabled');
-    	   }
-    	   if (checkboxes.length == 0 ){
-    		   $("button:contains('Pay')").attr('disabled','disabled');
-    	   }        	   
-    	   if (checkboxes.length != 1){
-    		   $("button:contains('Modify Order')").attr('disabled','disabled');
-    	   }
-    	   if (checkboxes.length == 1){
-    		   $("button:contains('Modify Order')").removeAttr('disabled');
-    	   }        	   
+        $('#search_orders input').on('keyup',function(event){
+        	var query = (this.value);
+        	var search_timeout = null;
+        	clearTimeout(search_timeout);
+            search_timeout = setTimeout(function(){
+            	$(".corder-list-contents").empty();
+            	for (order in self.pos_widget.offline_pos_orders.order_search_string){
+              	  if (self.pos_widget.offline_pos_orders.order_search_string[order].match(query)){
+              		  $("#corder_pos").append(QWeb.render('CordersList',{'order':self.offline_pos_orders.orders[order]}));
+              	  }
+                }
+            	self.change_event(customer_id,args);
+            },0);
        });
+       self.change_event(customer_id,args);
     },
+
     clock: function(){
         var self = this;
         self.$el.find(".username").after("<span class='clock'></span>");
