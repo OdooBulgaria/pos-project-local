@@ -276,7 +276,7 @@ module.PosModel = module.PosModel.extend({
              ],
 });
     
-module.SynchNotificationWidget = module.SynchNotificationWidget.extend({ //working
+module.SynchNotificationWidget = module.SynchNotificationWidget.extend({
     start: function(){
         var self = this;
         this.pos.bind('change:synch', function(pos,synch){
@@ -1313,10 +1313,16 @@ instance.point_of_sale.PosModel = instance.point_of_sale.PosModel.extend({
                 }
             },3000);
         });
-        setInterval(function(){
+        setInterval(function(){ //working
         	var a = navigator.onLine;
         	if (a){
         		self.set('synch',{state:'connected', pending:self.get('synch').pending});
+        		if (self.pos_widget.offline_pos_orders && self.pos_widget.offline_pos_orders.pay_list.length > 0 ){
+        			setTimeout(self.pos_widget.pos.pay_orders(),30000);
+        		}
+        		if (self.pos_widget.offline_pos_orders && self.pos_widget.offline_pos_orders.modify_orders.length > 0){
+        			setTimeout(self.pos_widget.pos.modify_order(),30000);
+        		}
         	}else{
         		self.set('synch',{state:'disconnected', pending:self.get('synch').pending});
         	}
@@ -1394,6 +1400,7 @@ instance.point_of_sale.PosModel = instance.point_of_sale.PosModel.extend({
             return server_ids;
         }).fail(function (error, event){
         	if(error.code === 200 ){    // Business Logic Error, not a connection problem
+        		console.log("============shivam error code") //working
         		self.pos_widget.screen_selector.show_popup('error-traceback',{
                     message: error.data.message,
                     comment: error.data.debug
@@ -1998,8 +2005,9 @@ module.PaymentScreenWidget.include({
         	if (self.pos_widget.modify_orders_widget.pay_list.length > 0){
         		if (currentOrder.getPaidTotal() >= currentOrder.getTotalTaxIncluded()){
         			var model = new instance.web.Model('pos.order')
+        			console.log(self.pos_widget.modify_orders_widget.pay_list);
         			_.each(self.pos_widget.modify_orders_widget.pay_list,function(item){
-        				self.pos_widget.offline_pos_orders.orders[item]['state'] = 'paid';        				
+        				self.pos_widget.offline_pos_orders.orders[item]['state'] = 'paid';         				
         			})
         			model.call('payment_recieved',[self.pos.cashregisters[0].journal_id[0], {'order_ids':self.pos_widget.modify_orders_widget.pay_list} , {'session_id':self.pos.pos_session.id}]).then(function(){
         				self.pos_widget.modify_orders_widget.pay_list = [];
@@ -2012,9 +2020,8 @@ module.PaymentScreenWidget.include({
         	            }else{
         	                self.pos_widget.screen_selector.set_current_screen(self.next_screen);
         	            }
-        			},function(err,event){ //indicator
+        			},function(err,event){ 
         				event.preventDefault();
-        				self.pos_widget.offline_pos_orders.orders[self.pos_widget.modify_orders_widget.pay_list]['state'] == 'paid';
         				self.pos_widget.offline_pos_orders.pay_list.push(
         						{'journal_id':self.pos.cashregisters[0].journal_id[0],'order_ids':self.pos_widget.modify_orders_widget.pay_list,'session_id':self.pos.pos_session.id}
         				)
