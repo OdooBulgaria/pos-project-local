@@ -821,8 +821,11 @@ module.pos_orders= module.PosBaseWidget.extend({ //shivam
 		this.defer.done(function(){
 			_.each(self.orders,function(order){
 				str = ""
+				if (order.partner_id && order.partner_id[1] != 'false'){
+					str += order.partner_id[1];
+				}
 				if (order.name && order.name != 'false'){
-					str += order.name   ;
+					str += " | " + order.name   ;
 				}
 				if (order.sequence_partner && order.sequence_partner != 'false'){
 					str += " | " +  order.sequence_partner ;
@@ -1313,10 +1316,13 @@ instance.point_of_sale.PosModel = instance.point_of_sale.PosModel.extend({
                 }
             },3000);
         });
-        setInterval(function(){ //working
+        window.addEventListener("online", function(e) {
         	var a = navigator.onLine;
         	if (a){
         		self.set('synch',{state:'connected', pending:self.get('synch').pending});
+        		if (self.db.cache.orders.length > 0){
+        			self.push_order();
+        		}
         		if (self.pos_widget.offline_pos_orders && self.pos_widget.offline_pos_orders.pay_list.length > 0 ){
         			setTimeout(self.pos_widget.pos.pay_orders(),30000);
         		}
@@ -1326,7 +1332,7 @@ instance.point_of_sale.PosModel = instance.point_of_sale.PosModel.extend({
         	}else{
         		self.set('synch',{state:'disconnected', pending:self.get('synch').pending});
         	}
-        },1000)
+        });
 
         this.get('orders').bind('remove', function(order,_unused_,options){ 
             self.on_removed_order(order,options.index,options.reason); 
@@ -1400,7 +1406,6 @@ instance.point_of_sale.PosModel = instance.point_of_sale.PosModel.extend({
             return server_ids;
         }).fail(function (error, event){
         	if(error.code === 200 ){    // Business Logic Error, not a connection problem
-        		console.log("============shivam error code") //working
         		self.pos_widget.screen_selector.show_popup('error-traceback',{
                     message: error.data.message,
                     comment: error.data.debug
@@ -1476,7 +1481,7 @@ instance.point_of_sale.PosModel = instance.point_of_sale.PosModel.extend({
         }
         var pushed = new $.Deferred();
         this.flush_mutex.exec(function(){
-            var flushed = self._flush_orders(self.db.get_orders());
+        	var flushed = self._flush_orders(self.db.get_orders());
             flushed.always(function(ids){
             	pushed.resolve();
             });
