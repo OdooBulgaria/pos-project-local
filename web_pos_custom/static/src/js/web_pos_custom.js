@@ -807,7 +807,7 @@ module.ReceiptScreenWidget = module.ReceiptScreenWidget.extend({
 
 //Creating pos_order database to avoid the round trip to local storage
 
-module.pos_orders= module.PosBaseWidget.extend({ //shivam
+module.pos_orders= module.PosBaseWidget.extend({ 
 	
 	init:function(parent){
 		var self =this;
@@ -1629,7 +1629,7 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         this.disable_rubberbanding();
         this.enable_customize();
         this.modify_orders_widget = new module.modify_orders(this);
-        this.offline_pos_orders = new module.pos_orders(this);//shivam
+        this.offline_pos_orders = new module.pos_orders(this);
         this.get_order();
         this.park_order_widget = new module.park_orders(this, {"park_button": this.paypad.$el.children().last()});
         self.$el.click(function(event){
@@ -1729,11 +1729,12 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
           e.preventDefault();
           var check = $("#myTab li :eq(1) a").attr('data-by-pass');
           $("#myTab li :eq(1) a").removeAttr('data-by-pass');
-          var href = $(e.currentTarget).attr('href');
+          var href = $(e.currentTarget).attr('href'); //shivam
+          var checkboxes = document.querySelectorAll("input[name='sex'][type='checkbox']:checked");
           if (!check && !$("ul.orderlines li").first().hasClass('empty') && (href == "#customers" || href == "#orders")){
               return;
           } 
-          if ($("section.client-details.edit").length > 0 ){
+          if ($("section.client-details.edit").length > 0 || checkboxes.length > 0 ){
         	  return;
           }
           $(this).tab('show');
@@ -1831,7 +1832,7 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
      	   }        	   
         });
     },
-    get_order: function(customer_id,args){ //shivam
+    get_order: function(customer_id,args){ 
     	var self = this;
     	var model = new instance.web.Model('pos.order');
     	$(".corder-list-contents").empty();
