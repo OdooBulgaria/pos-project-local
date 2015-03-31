@@ -689,7 +689,7 @@ module.Orderline = module.Orderline.extend({
             		if (custmer_id){
                         var partner = self.pos.db.get_partner_by_id(custmer_id);
                         	console.log(partner)
-                            $(".clientlist-screen .full-content:visible").hide();
+                            $(".clientlist-screen .screen-content:visible").hide();
                             var client_edit = $(QWeb.render('ClientDetailsEditNewModify',{widget:self.pos_widget.clientlist_screen, partner:partner}));
                             var contents = $(".clientlist-screen");
                             contents.append(client_edit);
@@ -747,7 +747,7 @@ module.Orderline = module.Orderline.extend({
                     //            
             		$("div.screen-content").css("position","absolute");
             		$("div.clientlist-screen.screen").css("overflow","auto");
-                    $(".clientlist-screen .full-content:visible").hide();
+                    $(".clientlist-screen .screen-content:visible").hide();
             		$("tr#customer-down-panel").hide();
             		var client_edit = $(QWeb.render('ClientDetailsEditNewModify',{widget:self.pos_widget.clientlist_screen, partner:{country_id: false}}));
                     var contents = $(".clientlist-screen");
@@ -807,7 +807,7 @@ module.ReceiptScreenWidget = module.ReceiptScreenWidget.extend({
 
 //Creating pos_order database to avoid the round trip to local storage
 
-module.pos_orders= module.PosBaseWidget.extend({ 
+module.pos_orders= module.PosBaseWidget.extend({
 	
 	init:function(parent){
 		var self =this;
@@ -1095,13 +1095,13 @@ instance.point_of_sale.ClientListScreenWidget = instance.point_of_sale.ClientLis
     },
     undo_client_details: function(){
         $("section.client-details").remove();
-        $(".clientlist-screen .full-content").show();
+        $(".clientlist-screen .screen-content").show();
     },
     saved_client_details: function(partner_id){
         var self = this;
         this.reload_partners().then(function(){
             $("section.client-details").remove();
-            $(".clientlist-screen .full-content").show();
+            $(".clientlist-screen .screen-content").show();
         });
     },
 });

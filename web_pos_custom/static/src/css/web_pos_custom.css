@@ -7,7 +7,12 @@ display: inline-block;
 vertical-align: top;
 cursor: pointer;
 }
-
+.pos .pos-topheader{
+    height: 10% !important;
+}
+.rightpane .col-md-11{
+    max-height: 478px !important;
+}
 .pos .breadcrumb-back {
 margin: 10px;
 }
@@ -28,22 +33,23 @@ margin: 10px;
 	top: 5px;
 	bottom: 0px;
 	left: 0%;
+    width:95%;
 }
 .pos .well {
-min-height: 0px;
-padding: 10px;
-margin-bottom: 2px;
-background-color: #f5f5f5;
-border: 1px solid #e3e3e3;
-border-radius: 4px;
--webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
+    min-height: 0px;
+    padding: 10px;
+    margin-bottom: 2px;
+    background-color: #f5f5f5;
+    border: 1px solid #e3e3e3;
+    border-radius: 4px;
+    -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
 }
 .pos .pos-rightheader .username{
     color:#DDD;
-    font-size:16px;
-    margin-right:32px;
-    line-height: 48px;
+    font-size:130%;
+    margin-right:5%;
+    line-height: 25%;
 }
 .pos .pos-rightheader .select_value{
     font-size:12px;
@@ -54,12 +60,12 @@ box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
     right:0;
     top:0;
     height:100%;
-    left:700px !important;
+    left:60% !important;
 }
 .pos .pos-rightheader .clock{
     color:#DDD;
-    font-size:14px;
-    margin-right:32px;
+    font-size:115%;
+    margin-right:5%;
     line-height: 48px;
 }
 .pos .category-list-custom{
@@ -135,7 +141,7 @@ box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
     background: white
 }
 .pos .searchbox input {
-    width: 200px;
+    width: 60%;
 }
 .pos .clientlist-screen .edit-buttons {
     position: relative;
@@ -171,9 +177,30 @@ box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
       width: 38%;
 }
 
+#customers .client-line.well.col-md-12{
+    margin-bottom: 5px; 
+}
+.nav-tabs > li{
+    margin-bottom: 405% !important;
+}
+
+/* Overwriting bootstrap */
+input[type="radio"], input[type="checkbox"] {
+    line-height: normal;
+    margin: -2px 0 0 !important;
+    vertical-align: middle;
+
+}
+
 /* Responsive */
 
-@media only screen and (max-width: 600px){
+@media only screen and (max-width: 767px){
+    .pos .paypad button{
+        font-size: 10px;
+    }
+    #customers .screen .screen-content{
+        height: 400px;
+    }
     .pos .screen{
         max-height: 1024px;
     }
@@ -181,39 +208,44 @@ box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
         width: 24%;
     }
     .pos .pos-rightheader {
-        left: 165px !important;
+        left: 22% !important;
         position: absolute;
         right: 0;
         top: 0;
     }
     .pos .pos-rightheader .username {
-        font-size: 14px;
+        font-size: 12px;
         margin-right: 4px;
     }
     .pos .pos-rightheader .clock {
-        font-size: 12px;
+        font-size: 10px;
         margin-right: 14px;
     }
     .pos .pos-rightheader .header-button{
-        font-size: 13px;
+        font-size: 10px;
     }
     .pos .order .orderline{
         padding: 1px 14px 23px;
-        font-size: 14px;
+        font-size: 10px;
     } 
+    .pos .order,
+    .pos .order .summary .line .subentry{
+        font-size: 10px !important;
+    }
     .col-md-11{
         width: 85%;
         margin-top: 8px;
     }
     .col-xs-1 {
-        left: 335px;
-        position: relative;
-        top: -66%;
+        left: 87%;
+        position: fixed !important;
+        top: 485px;
         width: 8.33333%;
+        z-index: 1010;
     }
-    .pos .client-line {
-        width: 96%;
-        font-size: 11px;
+    .pos #orders .client-line {
+        width: 100%;
+        font-size: 6px;
     }
     .pos .well{
         padding: 4px;
@@ -223,10 +255,10 @@ box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
         float: left;
         margin-left: 10px;
         margin-right: -2px !important;
-        width: 106px;
+        width: 32%;
     }
     .pos .product .product-img{
-        width: 100px;
+        width: 100%;
     }
 
 
@@ -234,24 +266,30 @@ box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
         border-right: none;
     }
     .pos .category-simple-button{
-        font-size: 10px;
+        font-size: 100%;
         width: 16%;
+        margin-top: 13px;
     }
     .pos .rightpane-header{
-          margin-top: 50px;
+          margin-top: 10.5%;
     }
     .pos .searchbox{
-        position: fixed;
-        top: 46px;
-        left: 179px;
+        position: absolute;
+        top: -0.5%;
+        left: 0%;
+        width: 55% !important;
     }
 
     .pos .searchbox input{
-          width: 410px;
+          width: 175%;
+          padding: 3px 20px 10px 38px;
     }
     .pos .breadcrumb-homeimg{
-        width: 27px;
-        margin: 12px 1px;
+        width: 55%;
+        margin: 10px 1px;
+    }
+    .pos .breadcrumb-button{
+        padding:0px !important;
     }
     .rightpane .breadcrumb{
         margin-bottom: 8px;
@@ -273,51 +311,58 @@ box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
         font-size: 13px;
     }
     .pos .numpad {
-        float: left;
-        width: 192px;
+        width: 40%;
+        position: fixed !important;
+        left: 31%;
+        top: 562px;
     }
     .pos .numpad button { 
         float: left;
         margin: 3px 1px 2px;
-        width: 43px;
+        width: 20%;
     }
     .pos .paypad {
-        float: right;
-        margin-top: 4px;
-        width: 175px;
-        position: relative;
-        top: -55%;
-        left: 11%;
+        top: 568px;
+        width: 29%;
+        position: fixed !important;
+        right: 32px;
     }
 
-    .pos #customer-down-panel .paypad{
-        width: 320px;
-        margin-top: 4px;
-        position: relative;
-        top: 2%;
-        left:1%;
+    .pos #customer-down-panel .paypad
+    {
+        width: 43%;
+        position: fixed !important;
+        top: 551px;
+        right:17%;
+    }
+    .pos #customer-down-panel div.paypad:nth-child(2)
+    {
+        width: 43%;
+        position: fixed !important;
+        top: 686px;
+        right:17%;
     }
     .pos #order-down-panel .paypad{
-        float:left;
-        width: 290px;
-        position: relative;
-        margin-top: 4px;
-        top: 0;
-        left: 15%;
+        width: 43%;
+        position: fixed !important;
+        top: 637px;
+        right:17%;
     }
     .pos .clientlist-screen .customer-list{
         font-size: 14px;
     }
     .screen .screen-content{
-        width: 95%;
+        width: 100%;
+    }
+    #customers .screen .screen-content{
+        width: 99%;
     }
     .pos .clientlist-screen .client-details{
         width: 95%;
     }
     .pos .clientlist-screen .edit-buttons {
-        position: absolute;
-        right: 45px;
-        top: 23px;
+        position: relative;
+        right: -2%;
     }
     .pos .clientlist-screen .client-details-right{
         float: left;
@@ -347,22 +392,46 @@ box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
     }
     .pos .clientlist-screen .edit-buttons .button{
         font-size: 33px;
+        margin-top: -6%;
+    }
+    
+    #customers .col-md-4,
+    #customers .col-md-3,
+    #customers .col-md-5{
+        display: inline;
+        padding: 0px !important;
+    }
+    .pos #customers .client-line{
+        font-size: 6.5px;
+        width: 97%;
+    }
+    .pos .product-list-scroller{
+        height: 407px; 
+    }
+    .pos .pos-logo{
+        height: 26px;
     }
         
 }
 @media only screen and (min-width: 768px) and (max-width: 959px){
-    .pos .screen{
-        max-height: 1024px;
+    #customers .screen .screen-content{
+        height: 400px;
     }
     .clientlist-screen.screen{
-        margin-top: 15px;
+        margin-top: -1%;
+    }
+    #customers .subwindow-container-fix.touch-scrollable.scrollable-y{
+        height: 483px;
     }
     .pos .pos-branding {
         width: 28%;
     }
+    .pos .pos-logo{
+        height: 35px;
+    }
     .pos .pos-rightheader{
         position: absolute;
-        left:240px !important;
+        left:28% !important;
         top:0;
         height: 100%;
     }
@@ -377,15 +446,14 @@ box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
         padding: 0  2px;
     }
     .pos .rightpane-header{
-        position: relative;
-        top: 50px;
-        margin-bottom: 32px;
+       margin-top: 10.5%;
     }
-    .pos .searchbox {
-        position: relative;
-        bottom: 120px;
-        left: 0;           
+    .pos .searchbox{
+        position: absolute;
+        top: 0%;
+        left: 0%;
     }
+   
     .pos .searchbox input{
         width: 258%;
     }
@@ -397,15 +465,12 @@ box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
         padding: 0 8px;
     }
     .pos .product-list-container {
-        bottom: 0;
-        left: 0;
-        position: absolute;
-        right: 0;
-        top: 17px;
+        margin-top: -4%;
     }
     .pos .product-list-scroller {
         box-sizing: border-box;
         width: 84%;
+        height: 407px;
     }
     .pos .category-list-custom {
         margin-top: 1px;
@@ -413,11 +478,11 @@ box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
         float: none;
     }
     .col-xs-1 {
-        bottom: 66%;
-        float: right;
-        font-size: 15px;
-        left: 83%;
-        position: relative;
+        top: 500px;
+        font-size: 12px;
+        left: 88%;
+        position: fixed !important;
+        z-index: 1010;
     }
     .col-md-11{
         margin-top: 13px;
@@ -426,26 +491,55 @@ box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
         text-align: center;
     }
     .pos .screen .content-calculate {
-        float: left;
         height: 40%;
         margin-top: -8px;
         margin-left: 20px;
     }
-     #search_customers{
-        position: relative;
-        bottom: 52px;
-        left: 0;
+    .pos .numpad{
+        position: fixed !important;
+        left: 290px;
+        top: 571px;
+    }
+    .pos .numpad button{
+        width: 23% !important;
+    }
+    .pos .paypad{
+        width: 25% !important;
+        position: fixed !important;
+        top:  573px;
+        right: 109px;
+    }
+    .pos #customer-down-panel .paypad
+    {
+        width: 25%;
+        position: fixed !important;
+        top: 574px;
+        right:189px;
+    }
+    .pos #customer-down-panel div.paypad:nth-child(2)
+    {
+        width: 25%;
+        position: fixed !important;
+        top: 711px;
+        right:189px;
     }
     .pos .client-line {
-        margin-top: 6px;
-        width: 82%;
-        font-size: 13px;
+        margin-top: 4px;
+        width: 84%;
+        font-size: 6px;
+    }
+    .pos #orders .client-line{
+        width: 100%;
+        font-size: 7.3px;
+        margin-top:0px;
     }
     .pos .clientlist-screen .client-details {
         width: 82%;
     }
 
-
+    .pos .breadcrumb{
+        height: 100%;
+    }
     .pos .clientlist-screen .edit-buttons {
         right: 3px;
         top: -13px;
@@ -454,7 +548,7 @@ box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
         float: left;
     }
     .pos .clientlist-screen .client-details input.client-sequence{
-        float:left;
+        float:left;;
         width: 130%;
     }
     .pos .clientlist-screen .client-details-left{
@@ -477,7 +571,7 @@ box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
         width: 130%;
     }
     .pos .pos-rightheader .header-button{
-        font-size: 15px;
+        font-size: 120%;
     }
     
     .pos .category-simple-button{
@@ -488,20 +582,33 @@ box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
         display: inline;
         flex-grow: 1;
         float: left;
-        font-size: 12px;
+        font-size: 13px;
         line-height: normal;
-        margin: 10px 2px 2px;
+        margin: 13px 2px 2px;
         padding: 5px;
         position: relative;
-        width: 13%;
-        }
+        width: 14%;
+    }
+    .pos #order-down-panel .paypad{
+        margin-left: 37%;
+    }
+    #customers .col-md-4,
+    #customers .col-md-3,
+    #customers .col-md-5{
+        display: inline;
+        padding: 0px !important;
+    }
+    .pos #customers .client-line{
+        font-size: 8px;
+    }
+
 
 }
 
 
 @media only screen and (min-width: 960px ) and (max-width: 1023px){
     .clientlist-screen.screen{
-        margin-top: 15px;
+        margin-top: 1.5%;
     }
     .pos .pos-branding{
         width: 28%;
@@ -510,7 +617,7 @@ box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
         left: 40% !important;
     }
     .pos .pos-rightheader .header-button{
-        font-size: 15px;
+        font-size: 115%;
     }
     .breadcrumb{
         margin-bottom: 12px !important;
@@ -518,12 +625,20 @@ box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
     .pos .searchbox input {
         width: 90%;
         margin: 4px -8px 4px 4px;
+        font-size: 100%;
+    }
+    .pos .product .product-img{
+        height: 100%;
     }
     .pos .product{
         float:left;
-        width: 132px;
+        width: 22%;
+        height: 85px;
+        font-size: 10px;
+        line-height: 11px;
     }
     .pos .product-list-scroller{
+        height: 105%;
         width: 87%;
     }
     .pos .product-list{
@@ -531,15 +646,11 @@ box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
         width: 101%;
     }
     .col-xs-1{
-        left: -38px;
-        bottom: 41%;
-        float: right !important;
+        position: fixed !important; 
+        left: 90%;
+        top: 450px;
     }
-    .pos .screen .content-calculate {
-        float: left;
-        margin-left: 64px;
-        margin-top: 7px;
-    }
+    
     .pos .well{
         padding: 6px;
     }
@@ -549,11 +660,9 @@ box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
         font-size: 14px;
     }
     .pos .numpad button{
-        height: 44px;
+        height: 37px;
     }
-    .pos .screen .content-calculate{
-        margin-left: 81px;
-    }
+    
     .pos .clientlist-screen .client-details {
         width: 82%;
     }
@@ -590,14 +699,53 @@ box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
     .pos .clientlist-screen .edit-buttons .button{
         font-size: 33px;
     }
+    
+    .pos #orders .client-line{
+        font-size: 9px;
+        width: 100%;
+    }
+    #customers .col-md-4,
+    #customers .col-md-3,
+    #customers .col-md-5{
+        display: inline;
+        padding: 0px !important;
+        width: 25%;
+    }
+    .pos #customers .client-line{
+        font-size: 11px;
+    }
+    .pos .paypad,
+    .pos .numpad{
+        margin-top:3%; 
+    }
+    .pos #products .paypad,
+    .pos #products .numpad{
+        margin-top:2%; 
+    }
+    .pos .product .product-img img{
+        max-height: 62px;
+    }
 }
 
 
 
-@media only screen and (min-width: 1024px ) and (max-width: 1280px){
+@media only screen and (min-width: 1024px ) and (max-width: 1279px){
 
     .pos .pos-branding{
         width: 28.5%;
+    }
+   
+    .pos #customer-down-panel .paypad{
+        width: 33% !important;
+    }
+    .pos #product-down-panel .numpad{
+        position: fixed;
+        left: 384px;
+        width: 25%;
+    }
+    .pos #product-down-panel .paypad{
+        position: fixed;
+        width: 20% !important;
     }
     .pos .pos-rightheader{
         width: 61%;
@@ -627,9 +775,10 @@ box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
     }
     .pos .product{
         width:22%;
-        height: 125px;
+        height: 83px;
         margin: 5px 0px 5px 0px;
         float:left;
+        line-height: 11px;
     }
     .pos .product-list-container{
         width: 95%;
@@ -642,26 +791,31 @@ box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
     .pos .product-list-scroller{
         height: 100%;
     }
-   .pos .client-line {
+     .pos .client-line {
         width: 103%;
-        font-size: 13px;
+        font-size: 9px;
     }
     .col-md-11{
         width: 85%;
     }
     .col-xs-1 {
-        font-size: 15px;
-        position: relative;
-        left: -5%;
-        top: 42px;
+        font-size: 100%;
+        position: fixed !important;
+        left: 90%;
+        top: 450px;
+        z-index: 1010;
     }
     .pos .numpad,
     .pos .paypad{
-        margin-top: 1%;
+        margin-top: 0px;
+    }
+    .pos .paypad{
+        width: 28% !important ;
     }
 
     .pos .numpad button{
-        height: 40px;
+        height: 37px;
+        width: 23%;
     }
     #customers .screen .screen-content{
         width: 95%;
@@ -716,6 +870,79 @@ box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
         font-size: 14px;
         margin-left: 20px;
     }
+    .pos #orders .client-line {
+        width: 100%;
+        font-size: 9.4px;
+    }
+    #customers .col-md-4,
+    #customers .col-md-5,
+    #customers .col-md-3{
+        width: 25%;
+        display: inline;
+        padding-left: 0px !important;
+    }
+    .pos .input-button{
+        font-size: 22px;
+    }
+    .pos .product .product-img img{
+        max-height: 62px;
+    }
+    .breadcrumb img{
+        width: 40%;
+    }
 
+
+}
+@media screen and (min-width: 1280px){
+    #customers .well .col-md-4,
+    #customers .well .col-md-3,
+    #customers .well .col-md-5{
+        width: 25% !important;
+        font-size: 12.5px;
+    }
+   .pos #orders .client-line{
+        font-size: 12.8px;
+   }
+   .pos #customers .client-line{
+        width: 99.5%;
+   }
+   .nav.nav-tabs.tabs-right.sideways{
+        right: 23px;
+       
+    }
+    .pos .numpad button{
+        height: 40px !important;
+    }
+    .pos .product{
+        font-size: 10px;
+        line-height: 80px;
+        height: 100px;
+    }
+    .pos .product .product-img img{
+        max-height: 70px !important;
+    }
+    .pos .breadcrumb{
+        height: 35px;
+    }
+    .product-list-container{
+        height: 110%;
+    }
+    .pos .numpad,
+    .pos .paypad{
+        margin-top: 32px;
+
+    }
+    .col-xs-1{
+        position: fixed !important; 
+        top: 450px;
+        left: 94%;
+    }
+    .pos .rightpane-header{
+        margin-bottom: 13px;
+    }
+    .pos #customer-down-panel .numpad, 
+    .pos #customer-down-panel .paypad{
+        margin-top: 8px;
+    }
 }
 
