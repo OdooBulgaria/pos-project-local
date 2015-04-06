@@ -251,6 +251,7 @@ class pos_order(osv.osv):
 
     def create_from_ui(self, cr, uid, orders, context=None):
         # Keep only new orders
+        print "======================================orders",orders
         submitted_references = [o['data']['name'] for o in orders]
         existing_order_ids = self.search(cr, uid, [('pos_reference', 'in', submitted_references)], context=context)
         existing_orders = self.read(cr, uid, existing_order_ids, ['pos_reference'], context=context)

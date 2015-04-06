@@ -347,7 +347,7 @@ module.OrderWidget = module.OrderWidget.extend({
             var mode = this.numpad_state.get('mode');
             if( mode === 'quantity'){
                 if (this.pos_widget.available_qty){
-                	if  (val > self.pos_widget.available_qty_lines[order.getSelectedLine().pos_id]){
+                	if  (parseFloat(val) > self.pos_widget.available_qty_lines[order.getSelectedLine().pos_id]){
                 		self.numpad_state.set({
                 			'buffer':'0',
                 		});
@@ -480,13 +480,68 @@ module.Orderline = module.Orderline.extend({
             this.pos_name = options.pos_name;
         },
         
-        modify_order:function(order_id){
+        modify_order:function(order_id,check_save){ //working
         	var self = this;
         	var list_record = []
         	var model = new instance.web.Model('pos.order.line');
         	var model_order =  new instance.web.Model('pos.order');
         	var currentOrder = self.pos.get('selectedOrder');
         	var amount_total = currentOrder.getTotalTaxIncluded();
+        	console.log("====================================amount_total",amount_total);
+        	
+        	if (check_save){
+        		_.each(self.pos.db.cache.orders,function(order){
+        			if (order_id == order.id){
+        				console.log("========================order",order)
+        				line_record = [];
+        				self.pos_widget.offline_pos_orders.orders[order_id].lines = [];
+        				while(true){
+        	                var order_line = self.pos.get('selectedOrder').get('orderLines').at(0);
+        	                if (order_line){
+        	     	    		line_record.push([0,0,{
+        	     	    			'discount':order_line.discount ,
+        	     	    			'price_unit':order_line.price,
+        	     	    			'product_id':order_line.product.id,
+        	     	    			'qty':order_line.available_qty,
+        	     	    		}]);
+        	     	    		self.pos_widget.offline_pos_orders.orders[order_id].lines.push({
+        	     	    			'available_qty':order_line.available_qty,
+        	     	    			'discount':order_line.discount,
+        	     	    			'id':0,
+        	     	    			'price_unit':order_line.price,
+        	     	    			'qty':order_line.available_qty,
+        	     	    			'return_qty':0,
+        	     	    			'product':self.pos.db.product_by_id[order_line.product.id],
+        	     	    		});
+        	     	    	}else{break;}
+        	 	    		order_line.set_quantity("remove");
+    	        		}
+        				self.pos.db.cache.orders[self.pos.db.cache.orders.indexOf(order)].data.lines = line_record;
+        				//finding the -ve statements
+        				negative_statement = 0.00;
+        				console.log("========================statements_ids",self.pos.db.cache.orders[self.pos.db.cache.orders.indexOf(order)].data.statement_ids);
+        				_.each(self.pos.db.cache.orders[self.pos.db.cache.orders.indexOf(order)].data.statement_ids,function(statements){
+        					if (statements[2].amount < 0){
+        						console.log("=====================statements",statements);
+        						negative_statement + = statements[2].amount;
+        					}
+        				});
+        				amount_for_statement = order.data.amount_paid - order.data.amount_return + negative_statement - amount_total;
+        				console.log("==========================amount_for_statement",amount_for_statement);
+        				var statement_return = [0,0];
+        				statement_return.push({
+        	                name: instance.web.datetime_to_str(new Date()),
+        	                statement_id: self.cashregister.id,
+        	                account_id: self.cashregister.account_id[0],
+        	                journal_id: self.cashregister.journal_id[0],
+        	                amount: -parseFloat(amount_for_statement),
+        				})   
+        				self.pos.db.cache.orders[self.pos.db.cache.orders.indexOf(order)].data.statement_ids.push(statement_return);	
+        				return true
+        			}
+        			return true
+        		});
+        	}
         	while(true){
                 var order_line = self.pos.get('selectedOrder').get('orderLines').at(0);
      	    	if (order_line){
@@ -502,7 +557,7 @@ module.Orderline = module.Orderline.extend({
         	self.pos_widget.offline_pos_orders.orders[order_id].amount_total = amount_total
      	   model_order.call('create_modify_order',[self.pos.cashregisters[0].journal_id[0],list_record,{'session_id':self.pos.pos_session.id}]).then(function(res){
      	    	return;
-     	    },function(err,event){ //indicator
+     	    },function(err,event){ 
      	    	event.preventDefault();
      	    	window.alert("Do not refresh the browser as the internet connection is down. Otherwise the modified data will be lost");
      	    	self.pos_widget.offline_pos_orders.modify_orders.push([self.pos.cashregisters[0].journal_id[0],list_record,{'session_id':self.pos.pos_session.id}]);
@@ -582,19 +637,17 @@ module.Orderline = module.Orderline.extend({
   	                  }
             		}
             		
-                    if (self.pos_name == "Modify Order"){
+                    if (self.pos_name == "Modify Order"){ //working
                     	var checkboxes = document.querySelectorAll("input[name='sex'][type='checkbox']:checked");
-                    	for(i=0;i<checkboxes.length;i++){
-                    		order = checkboxes[i];
-                    		if ($($(order).siblings()[0]).text() == 'unsaved'){
-                                self.pos_widget.screen_selector.show_popup('error',{
-                                    message: _t('Unsaved Orders Cannot be modified'),
-                                });
-                                return;
-                    		}                    		
+                    	if (checkboxes.length > 1){
+                            self.pos_widget.screen_selector.show_popup('error',{
+                                message: _t('Multiple Orders cannot be modified'),
+                            });
+                            return;                    		
                     	}
+                    	var order_save = checkboxes[0];
                     	var currentOrder = self.pos.get('selectedOrder')
-                    	self.pos_widget.available_qty = true;
+                		self.pos_widget.available_qty = true;
                     	if (currentOrder.getTotalTaxIncluded() < 0){
                             self.pos_widget.screen_selector.show_popup('error',{
                                 message: _t('Back Orders Cannot be modified'),
@@ -620,7 +673,7 @@ module.Orderline = module.Orderline.extend({
                     	var model_order = new instance.web.Model("pos.order");
                     	$("#modify_order_pay_cash").click(function(){
                     		self.pos_widget.available_qty = undefined;
-                			self.modify_order($("#corder_pos").find("input[name='sex'][type='checkbox']:checked").val());
+                			self.modify_order($("#corder_pos").find("input[name='sex'][type='checkbox']:checked").val(),$($(order_save).siblings()[0]).text() == 'unsaved');
                 			$("#modify_order").remove();
                     	    $($("tr[name='products']").children()[1]).removeAttr("style");
                     	    self.pos.get('selectedOrder').destroy();
@@ -1431,6 +1484,7 @@ instance.point_of_sale.PosModel = instance.point_of_sale.PosModel.extend({
                         'available_qty':order.lines[i][2].qty,
                         'return_qty':0,
                         'product':self.db.product_by_id[order.lines[i][2].product_id],
+                        'pos_id':i,
     			}
     		}
     		self.pos_widget.offline_pos_orders.orders[order.name.split(' ')[1]] = {
@@ -1729,12 +1783,12 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
           e.preventDefault();
           var check = $("#myTab li :eq(1) a").attr('data-by-pass');
           $("#myTab li :eq(1) a").removeAttr('data-by-pass');
-          var href = $(e.currentTarget).attr('href'); //shivam
+          var href = $(e.currentTarget).attr('href');
           var checkboxes = document.querySelectorAll("input[name='sex'][type='checkbox']:checked");
-          if (!check && !$("ul.orderlines li").first().hasClass('empty') && (href == "#customers" || href == "#orders")){
-              return;
+          if (!check && !$("ul.orderlines li").first().hasClass('empty') && (href == "#customers" || href == "#orders" || href == "#products")){
+        	  return;
           } 
-          if ($("section.client-details.edit").length > 0 || checkboxes.length > 0 ){
+          if ($("section.client-details.edit").length > 0){
         	  return;
           }
           $(this).tab('show');
@@ -1834,6 +1888,7 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
     },
     get_order: function(customer_id,args){ 
     	var self = this;
+    	console.log(this.pos.db)
     	var model = new instance.web.Model('pos.order');
     	$(".corder-list-contents").empty();
     	if (customer_id && args){
