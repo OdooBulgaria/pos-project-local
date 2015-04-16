@@ -480,19 +480,17 @@ module.Orderline = module.Orderline.extend({
             this.pos_name = options.pos_name;
         },
         
-        modify_order:function(order_id,check_save){ //working
+        modify_order:function(order_id,check_save){ 
         	var self = this;
         	var list_record = []
         	var model = new instance.web.Model('pos.order.line');
         	var model_order =  new instance.web.Model('pos.order');
         	var currentOrder = self.pos.get('selectedOrder');
         	var amount_total = currentOrder.getTotalTaxIncluded();
-        	console.log("====================================amount_total",amount_total);
         	
         	if (check_save){
         		_.each(self.pos.db.cache.orders,function(order){
         			if (order_id == order.id){
-        				console.log("========================order",order)
         				line_record = [];
         				self.pos_widget.offline_pos_orders.orders[order_id].lines = [];
         				while(true){
@@ -519,15 +517,12 @@ module.Orderline = module.Orderline.extend({
         				self.pos.db.cache.orders[self.pos.db.cache.orders.indexOf(order)].data.lines = line_record;
         				//finding the -ve statements
         				negative_statement = 0.00;
-        				console.log("========================statements_ids",self.pos.db.cache.orders[self.pos.db.cache.orders.indexOf(order)].data.statement_ids);
         				_.each(self.pos.db.cache.orders[self.pos.db.cache.orders.indexOf(order)].data.statement_ids,function(statements){
         					if (statements[2].amount < 0){
-        						console.log("=====================statements",statements);
         						negative_statement + = statements[2].amount;
         					}
         				});
         				amount_for_statement = order.data.amount_paid - order.data.amount_return + negative_statement - amount_total;
-        				console.log("==========================amount_for_statement",amount_for_statement);
         				var statement_return = [0,0];
         				statement_return.push({
         	                name: instance.web.datetime_to_str(new Date()),
@@ -569,22 +564,19 @@ module.Orderline = module.Orderline.extend({
             this._super();
             if (self.cashregister){
                     this.$el.click(function(){
-                	if(self.pos_name == "Pay"){
+                	if(self.pos_name == "Pay"){  //working
                 			var customer = [];
                 			flag = false;
                         	var checkboxes = document.querySelectorAll("input[name='sex'][type='checkbox']:checked");
                         	for(i=0;i<checkboxes.length;i++){
                         		order = checkboxes[i];
                         		if ($($(order).siblings()[0]).text() == 'unsaved'){
-                                    self.pos_widget.screen_selector.show_popup('error',{
-                                        message: _t('Unsaved Orders Cannot be Paid'),
-                                    });
-                                    return;
+                        			self.pos_widget.offline_pos_orders.orders[$(order).val()]
                         		}                    		
                         	}                			
                 			var order_id = parseInt($("input[name='sex'][type='checkbox']:checked").val());
                             _.each($("input[name=sex][type='checkbox']:checked"),function(line){
-                            	if (! ($(line).parent().parent().hasClass('draft'))){
+                            	if (! ($(line).parent().parent().hasClass('draft') || $(line).parent().parent().hasClass('unsaved'))){
                             		flag = true;
                             	}
                             });
@@ -596,8 +588,10 @@ module.Orderline = module.Orderline.extend({
                                 return;
                             }
                            _.each($("input[name=sex][type='checkbox']:checked"),function(line){
-                        	   customer.push($($(line).parent()).find("b[name='customer_id']").text())
-                        	   self.pos_widget.modify_orders_widget.pay_list.push($(line).val()); 
+                        	   if ($($(line).siblings()[0]).text() != 'unsaved'){
+                            	   customer.push($($(line).parent()).find("b[name='customer_id']").text())
+                            	   self.pos_widget.modify_orders_widget.pay_list.push($(line).val());                         		   
+                        	   }
                            });
                            if (customer.allValuesSame()){
                                var pos = new instance.web.Model('pos.order');
@@ -637,7 +631,7 @@ module.Orderline = module.Orderline.extend({
   	                  }
             		}
             		
-                    if (self.pos_name == "Modify Order"){ //working
+                    if (self.pos_name == "Modify Order"){ 
                     	var checkboxes = document.querySelectorAll("input[name='sex'][type='checkbox']:checked");
                     	if (checkboxes.length > 1){
                             self.pos_widget.screen_selector.show_popup('error',{
@@ -1473,8 +1467,21 @@ instance.point_of_sale.PosModel = instance.point_of_sale.PosModel.extend({
 	add_order:function(order){
     	var self = this;
     	var today = new Date();
+		console.log(self.pos_widget.offline_pos_orders.orders);
+    	console.log(self);
     	if (!(order.name in self.pos_widget.offline_pos_orders.orders)){
+    		console.log("==================================,order",order);
     		var line_list = {}
+    		var partner_id = []
+    		var sequence_partner = undefined 
+    		if (order.partner_id){
+    			partner_id.push(order.partner_id)
+    			partner_id.push(self.db.partner_by_id[order.partner_id].name)
+    			sequence_partner = self.db.partner_by_id[order.partner_id].sequence
+    		}
+    		else{
+    			partner_id = undefined;
+    		}
     		for(i=0;i<order.lines.length;i++){
     			line_list[i] = {
                         'id': i,
@@ -1487,14 +1494,14 @@ instance.point_of_sale.PosModel = instance.point_of_sale.PosModel.extend({
                         'pos_id':i,
     			}
     		}
-    		self.pos_widget.offline_pos_orders.orders[order.name.split(' ')[1]] = {
+			self.pos_widget.offline_pos_orders.orders[order.name.split(' ')[1]] = {
     				'id':undefined,
     				'state':'unsaved',
     				'name':order.name,
     				'date_order':today.getFullYear() + '-' + parseInt(today.getMonth()+1) + '-' + today.getDate()+ ' ',
     				'amount_total':order.amount_total,
-    				'partner_id':undefined,
-    				'sequence_partner':undefined,
+    				'partner_id':partner_id,
+    				'sequence_partner':sequence_partner,
     				'lines': line_list,
     		}
     	}else{
@@ -2063,10 +2070,47 @@ module.PaymentScreenWidget.include({
             });
 
         }else{  
+        	var checkboxes = document.querySelectorAll("input[name='sex'][type='checkbox']:checked");
+    		for(i=0;i<checkboxes.length;i++){
+        		order = checkboxes[i];
+        		console.log("===",self)
+        		if ($($(order).siblings()[0]).text() == 'unsaved'){
+        			if (self.pos_widget.offline_pos_orders.orders[$(order).val()].amount_paid == undefined)
+        				{
+        				order_id = self.pos_widget.offline_pos_orders.orders[$(order).val()].name.split(' ')[1];
+        				self.pos_widget.offline_pos_orders.orders[$(order).val()].amount_paid = currentOrder.getPaidTotal();
+        				_.each(self.pos.db.cache.orders,function(order){
+        					if (order.id == order_id){
+        						statement_ids = [0,0,{ //working
+        	        	                name: instance.web.datetime_to_str(new Date()),
+        	        	                statement_id: self.pos.cashregisters[0].id,
+        	        	                account_id: self.pos.cashregisters[0].account_id[0],
+        	        	                journal_id: self.pos.cashregisters[0].journal_id[0],
+        	        	                amount: parseFloat(currentOrder.getPaidTotal()),
+        						}];
+        						order.data.amount_return = currentOrder.getPaidTotal() - currentOrder.getTotalTaxIncluded();
+        						order.amount_paid = currentOrder.getPaidTotal();
+        						order.data.statement_ids.push(statement_ids);
+        						order.data.amount_paid = currentOrder.getPaidTotal();
+        					}
+        				});
+        				self.pos.get('selectedOrder').destroy();
+        				self.pos_widget.switch_to_order();
+        				return ;
+        				}else{
+            				self.pos.get('selectedOrder').destroy();
+            				self.pos_widget.switch_to_order();
+        					self.pos_widget.screen_selector.show_popup('error',{
+                                message: _t('Unsaved'),
+                                comment: _t('The Unsaved Order has already been paid'),
+                            });        			
+        					return;
+        				}
+        		}                    		
+        	}                		
         	if (self.pos_widget.modify_orders_widget.pay_list.length > 0){
         		if (currentOrder.getPaidTotal() >= currentOrder.getTotalTaxIncluded()){
         			var model = new instance.web.Model('pos.order')
-        			console.log(self.pos_widget.modify_orders_widget.pay_list);
         			_.each(self.pos_widget.modify_orders_widget.pay_list,function(item){
         				self.pos_widget.offline_pos_orders.orders[item]['state'] = 'paid';         				
         			})

@@ -251,7 +251,7 @@ class pos_order(osv.osv):
 
     def create_from_ui(self, cr, uid, orders, context=None):
         # Keep only new orders
-        print "======================================orders",orders
+        print "============order",orders
         submitted_references = [o['data']['name'] for o in orders]
         existing_order_ids = self.search(cr, uid, [('pos_reference', 'in', submitted_references)], context=context)
         existing_orders = self.read(cr, uid, existing_order_ids, ['pos_reference'], context=context)
@@ -264,9 +264,9 @@ class pos_order(osv.osv):
             to_invoice = tmp_order['to_invoice']
             order = tmp_order['data']
             order_id = self.create(cr, uid, self._order_fields(cr, uid, order, context=context),context)
-            if order.get('partner_id'):
-                self.write(cr, uid, order_id, {'session_id': False}, context=context)
-
+            if order.get('partner_id') :
+                if not order.get("amount_paid",False):
+                    self.write(cr, uid, order_id, {'session_id': False}, context=context)
             for payments in order['statement_ids']:
                 self.add_payment(cr, uid, order_id, self._payment_fields(cr, uid, payments[2], context=context), context=context)
 
@@ -275,7 +275,7 @@ class pos_order(osv.osv):
                 session.write({'sequence_number': order['sequence_number'] + 1})
                 session.refresh()
 
-            if order['amount_return'] and not order['partner_id']:
+            if (order['amount_return'] and not order['partner_id']) or (order['amount_return'] and order['partner_id'] and order.get("amount_paid",False)) :
                 cash_journal = session.cash_journal_id
                 if not cash_journal:
                     cash_journal_ids = filter(lambda st: st.journal_id.type=='cash', session.statement_ids)
@@ -290,7 +290,7 @@ class pos_order(osv.osv):
                     'journal': cash_journal.id,
                 }, context=context)
             order_ids.append(order_id)
-            if orders[0]['data'].get('partner_id'):
+            if orders[0]['data'].get('partner_id') and not order.get('amount_paid'):
                 return self.add_order_object(cr, uid, order_ids, context)
             try:
                 self.signal_workflow(cr, uid, [order_id], 'paid')
