@@ -13,7 +13,7 @@
         </template>
     <template id="pos custom show" inherit_id="point_of_sale.index" name="Point of Sale Custom">
          <xpath expr="//meta[@name='viewport']" position="replace">
-                <meta name="viewport" content="width=device-width, initial-scale=1" />
+             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
          </xpath>
         <xpath expr="." position="inside">
             <link rel="stylesheet" href="/web_pos_custom/static/src/css/web_pos_custom.css"/>
