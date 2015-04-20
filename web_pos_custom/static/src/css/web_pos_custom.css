@@ -1,3 +1,4 @@
+
 .pos .nav-tabs {
   border-bottom: 0px solid #ddd; 
 }
@@ -39,7 +40,7 @@ margin: 10px;
     min-height: 0px;
     padding: 10px;
     margin-bottom: 2px;
-    background-color: #f5f5f5;
+    background-color: #fff;
     border: 1px solid #e3e3e3;
     border-radius: 4px;
     -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
@@ -50,6 +51,9 @@ margin: 10px;
     font-size:130%;
     margin-right:5%;
     line-height: 25%;
+}
+#customers .clientlist-screen.screen{
+    margin-top: 10px;
 }
 .pos .pos-rightheader .select_value{
     font-size:12px;
@@ -78,9 +82,8 @@ margin: 10px;
     display: inline-block;
     font-size: 14px;
     margin: 2px;
-    margin-top:10px;
-    padding-right:10px;
-    padding: 5px;
+    margin-top:8px;
+    padding: 8px;
     line-height: normal;
     flex-grow: 1;
     -webkit-flex-grow: 1;
@@ -99,8 +102,7 @@ margin: 10px;
     width: 30%;
 }
 .pos .category-simple-button:hover{
-    background: #333333;
-    color: white;
+    background: #eee;
 }
 .pos .screen .content-calculate{
     height: 40%
@@ -124,7 +126,7 @@ margin: 10px;
     height: 100%;
     overflow: auto;
     position: relative;
-    z-index: 1001;
+    /*z-index: 1001;*/
 }
 .pos .client-line{
    width: 100%;
@@ -133,7 +135,6 @@ margin: 10px;
     background: #A9DFFC;
 } 
 .pos .clientlist-screen .customer-list{
-    font-size: 16px;
     width: 100%;
     padding-top: 1px;
 }
@@ -175,6 +176,7 @@ margin: 10px;
 .pos .searchbox{
       display: block;
       width: 38%;
+      margin-top: -3px;
 }
 
 #customers .client-line.well.col-md-12{
@@ -183,6 +185,127 @@ margin: 10px;
 .nav-tabs > li{
     margin-bottom: 405% !important;
 }
+.pos .nav > li > a:focus{
+    color: #333;
+    background-color: #fff !important;
+}
+.pos .nav > li > a:hover{
+    background-color: #51d4d4 !important; 
+}
+
+/* Design */
+.pos .rightpane-header{
+    background: none repeat scroll 0 0 #009898;
+    border-bottom: none;
+}
+.pos .breadcrumb{
+    background-color: #009898 !important;
+}
+.pos .product{
+    box-shadow: 0 0 2px #bbb;
+    background: none repeat scroll 0 0 #fff;
+    border: 1px solid #6ee4e4;
+    border-radius: 3px;
+}
+.pos .product .price-tag{
+    background:none repeat scroll 0 0 #00c6c6;
+}
+.pos .numpad button{
+    box-shadow: -1px 1px 5px #ccc;
+    border: none;
+    margin: 1px 1px 4px;
+    color: #054c4c;
+    font-weight: normal;
+    cursor: pointer;
+}
+.pos button, .pos a.button{
+    background: none repeat scroll 0 0 #fff;
+}
+.pos .paypad button:active, 
+.pos .numpad button:active, 
+.pos .numpad .selected-mode, 
+.pos .popup button:active{
+    box-shadow: -1px 1px 5px #555;
+    background: none repeat scroll 0 0 #00c6c6;
+}
+.pos .paypad button{
+    box-shadow: -1px 1px 5px #ccc;
+    margin: 0 -6px 8px -2px;
+    border: none;
+    color: #054c4c;
+    font-weight: normal;
+    cursor: pointer;
+}
+.pos .nav > li > a{
+    box-shadow: -1px 1px 5px #ccc;
+}
+.nav-tabs > li.active > a, 
+.nav-tabs > li.active > a:hover, 
+.nav-tabs > li.active > a:focus{
+    color: #054c4c;
+}
+.nav-tabs > li{
+    margin-top: 3px;
+}
+.pos .order{
+    box-shadow: -1px 1px 5px #ccc;
+}
+.pos .category-simple-button{
+    border: none;
+    box-shadow: 0 0 5px #888;
+    border-radius: 3px;
+    color: #054c4c;
+    background-color: #fff;
+}
+#customers .client-line.well.col-md-12{
+    margin-bottom: 10px;
+    box-shadow: 0 0 4px #ccc;
+}
+.pos #orders .client-line{
+        box-shadow: 0 0 4px #ccc;
+        margin-bottom: 10px;
+}
+.pos button, .pos a.button{
+    background: none repeat scroll 0 0 #fff;
+
+}
+.numpad button:hover{
+    background-color: #eee; 
+}
+.paypad button:hover{
+    background-color: #28cbcb;
+    color: white;
+}
+
+.tii-order-page,
+.tii-customer-page {
+   overflow: hidden;
+   width: 817px;
+}
+.tii-order-page div{
+    float: left;
+    width: 15%;
+    margin: 0;
+}
+.tii-customer-page div{
+    float:left;
+    width: 24%;
+}
+.tii-order-page div.tii-customer-name{
+    width: 23%;
+}
+
+.pos #orders .draft{
+    background: none;
+}
+.pos #orders .well,
+.pos #customers .well{
+    padding: 10px 10px 0;
+}
+.col-md-3.tii-customer-select b{
+    padding-left: 3px;
+}
+
 
 /* Overwriting bootstrap */
 input[type="radio"], input[type="checkbox"] {
@@ -195,8 +318,16 @@ input[type="radio"], input[type="checkbox"] {
 /* Responsive */
 
 @media only screen and (max-width: 767px){
+    .tii-order-checkbox{
+        padding-top: 2px;
+    }
+    .tii-order-page,
+    .tii-customer-page {
+       overflow: hidden;
+       width: 330px;
+    }
     .pos .paypad button{
-        font-size: 10px;
+        font-size: 14px;
     }
     #customers .screen .screen-content{
         height: 400px;
@@ -208,7 +339,7 @@ input[type="radio"], input[type="checkbox"] {
         width: 24%;
     }
     .pos .pos-rightheader {
-        left: 22% !important;
+        left: 32% !important;
         position: absolute;
         right: 0;
         top: 0;
@@ -275,7 +406,7 @@ input[type="radio"], input[type="checkbox"] {
     }
     .pos .searchbox{
         position: absolute;
-        top: -0.5%;
+        top: 0%;
         left: 0%;
         width: 55% !important;
     }
@@ -300,7 +431,6 @@ input[type="radio"], input[type="checkbox"] {
     .pos .order{
         margin-right: 7px;
         margin-left: 7px;
-        margin-top: 0px;
     }
     .pos .category-list-custom {
         margin-top: 1px;
@@ -420,9 +550,9 @@ input[type="radio"], input[type="checkbox"] {
     .clientlist-screen.screen{
         margin-top: -1%;
     }
-    #customers .subwindow-container-fix.touch-scrollable.scrollable-y{
+    /*#customers .subwindow-container-fix.touch-scrollable.scrollable-y{
         height: 483px;
-    }
+    }*/
     .pos .pos-branding {
         width: 28%;
     }
@@ -497,8 +627,9 @@ input[type="radio"], input[type="checkbox"] {
     }
     .pos .numpad{
         position: fixed !important;
-        left: 290px;
+        left: 268px;
         top: 571px;
+        width: 27%;
     }
     .pos .numpad button{
         width: 23% !important;
@@ -530,7 +661,7 @@ input[type="radio"], input[type="checkbox"] {
     }
     .pos #orders .client-line{
         width: 100%;
-        font-size: 7.3px;
+        font-size: 8px;
         margin-top:0px;
     }
     .pos .clientlist-screen .client-details {
@@ -574,32 +705,21 @@ input[type="radio"], input[type="checkbox"] {
         font-size: 120%;
     }
     
-    .pos .category-simple-button{
-        background-color: #f2f2f2;
-        border: 1px solid black;
-        color: black;
-        cursor: pointer;
-        display: inline;
-        flex-grow: 1;
-        float: left;
-        font-size: 13px;
-        line-height: normal;
-        margin: 13px 2px 2px;
-        padding: 5px;
-        position: relative;
-        width: 14%;
-    }
     .pos #order-down-panel .paypad{
-        margin-left: 37%;
+        margin-right: 10%;
     }
     #customers .col-md-4,
     #customers .col-md-3,
     #customers .col-md-5{
-        display: inline;
         padding: 0px !important;
     }
     .pos #customers .client-line{
         font-size: 8px;
+    }
+    .tii-order-page,
+    .tii-customer-page {
+       overflow: hidden;
+       width: 435px;
     }
 
 
@@ -607,6 +727,9 @@ input[type="radio"], input[type="checkbox"] {
 
 
 @media only screen and (min-width: 960px ) and (max-width: 1023px){
+    #myTab{
+        z-index: 9999;
+    }
     .clientlist-screen.screen{
         margin-top: 1.5%;
     }
@@ -701,7 +824,7 @@ input[type="radio"], input[type="checkbox"] {
     }
     
     .pos #orders .client-line{
-        font-size: 9px;
+        font-size: 11px;
         width: 100%;
     }
     #customers .col-md-4,
@@ -725,12 +848,21 @@ input[type="radio"], input[type="checkbox"] {
     .pos .product .product-img img{
         max-height: 62px;
     }
+    .tii-order-page,
+    .tii-customer-page {
+       overflow: hidden;
+       width: 553px;
+    }
 }
 
 
 
 @media only screen and (min-width: 1024px ) and (max-width: 1279px){
-
+    .tii-order-page,
+    .tii-customer-page {
+       overflow: hidden;
+       width: 593px;
+    }
     .pos .pos-branding{
         width: 28.5%;
     }
@@ -793,7 +925,6 @@ input[type="radio"], input[type="checkbox"] {
     }
      .pos .client-line {
         width: 103%;
-        font-size: 9px;
     }
     .col-md-11{
         width: 85%;
@@ -823,7 +954,6 @@ input[type="radio"], input[type="checkbox"] {
     }
 
     .pos .clientlist-screen .customer-list {
-        font-size: 14px;
         padding-top: 1px;
         width: 95%;
     }
@@ -872,7 +1002,6 @@ input[type="radio"], input[type="checkbox"] {
     }
     .pos #orders .client-line {
         width: 100%;
-        font-size: 9.4px;
     }
     #customers .col-md-4,
     #customers .col-md-5,
@@ -893,15 +1022,13 @@ input[type="radio"], input[type="checkbox"] {
 
 
 }
-@media screen and (min-width: 1280px){
+@media screen and (min-width: 1280px) and (max-width: 1300px){
     #customers .well .col-md-4,
     #customers .well .col-md-3,
     #customers .well .col-md-5{
         width: 25% !important;
-        font-size: 12.5px;
     }
    .pos #orders .client-line{
-        font-size: 12.8px;
    }
    .pos #customers .client-line{
         width: 99.5%;
@@ -929,7 +1056,7 @@ input[type="radio"], input[type="checkbox"] {
     }
     .pos .numpad,
     .pos .paypad{
-        margin-top: 32px;
+        margin-top: 22px;
 
     }
     .col-xs-1{
@@ -943,6 +1070,11 @@ input[type="radio"], input[type="checkbox"] {
     .pos #customer-down-panel .numpad, 
     .pos #customer-down-panel .paypad{
         margin-top: 8px;
+    }
+    .tii-order-page,
+    .tii-customer-page {
+       overflow: hidden;
+       width: 780px;
     }
 }
 
