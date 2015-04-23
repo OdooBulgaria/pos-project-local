@@ -75,7 +75,7 @@
 }
 .sideways.tabs-right {
   right: 10px;
-  margin-top: -250px;
+  margin-top: -240px;
 }
 .sideways.tabs-right>li {
   -webkit-transform: rotate(90deg);
@@ -95,9 +95,10 @@
   margin-bottom: 100px !important;
 }
 .pos .nav > li > a {
-  background-color: rgb(168,168,168);
+  background-color: #28cbcb;
+  color: #333;
 }
-.pos .nav > li > a:hover, .pos .nav > li > a:focus {
-  background-color: #0099CB !important;
-  color: white;
+.pos .nav > li > a:hover{
+  background-color: #eee !important;
+  color: #000;
 }
