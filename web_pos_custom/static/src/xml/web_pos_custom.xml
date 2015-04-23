@@ -463,4 +463,14 @@
         </button>
     </t>
     
+    <t t-name = "date_range">
+	    <div id = "date_range">
+	    	From : <input id = "date_from" type = "date"/>
+	    	To : <input id = "date_to" type = "date"/>
+	    	<button id = "date_range_button" class = "paypad-button">
+	    		<t t-esc = "'Go'"/>
+	    	</button>	    
+	    </div>
+    </t>
+    
 </template>

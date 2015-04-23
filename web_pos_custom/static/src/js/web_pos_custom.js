@@ -564,7 +564,7 @@ module.Orderline = module.Orderline.extend({
             this._super();
             if (self.cashregister){
                     this.$el.click(function(){
-                	if(self.pos_name == "Pay"){  //working
+                	if(self.pos_name == "Pay"){  
                 			var customer = [];
                 			flag = false;
                         	var checkboxes = document.querySelectorAll("input[name='sex'][type='checkbox']:checked");
@@ -1756,7 +1756,7 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
     switch_to_order:function(){
         var self = this;
         if (this.pos_widget.customer_id && self.pos_widget.mode == 'all'){
-        	self.get_order(this.pos_widget.customer_id,['invoiced','done','paid','draft']);
+        	self.get_order(this.pos_widget.customer_id,['invoiced','done','paid','draft']); //working
         }
         else if (this.pos_widget.customer_id && self.pos_widget.mode == 'open'){
         	self.get_order(this.pos_widget.customer_id,['draft']);
@@ -1764,6 +1764,31 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         else{
         	self.get_order();
         }
+        var $date = QWeb.render('date_range',{})
+    	$("#order-down-panel").append($date);
+        $('button#date_range_button').on('click',function(event){
+        	var from = $('input#date_from').val();
+        	var to  = $("input#date_to").val();
+        	_.each($("tbody#corder_pos").children(),function(order){
+        		date = $(order).find("b[name='date']").text();
+        		$(order).hide();
+        		if (date){
+        			date = new Date(date)
+        		}
+        		if (from){
+        			from = new Date(from)
+    				if (date >= from){
+    					$(order).show();
+    				}else{$(order).hide()}
+        		}else{$(order).show();}
+        		if (to){
+        			to = new Date(to);
+        			if (date <= to){
+        				$(order).show();
+        			}else{$(order).hide()}
+        		}else{$(order).show();}
+        	});
+        });
         this.pos_widget.customer_id = undefined;
         this.pos_widget.mode = undefined;
         $("a[data-toggle='tab']").parent().removeClass('active');
@@ -1839,6 +1864,7 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
 
     change_event:function(customer_id,args){
         var self = this;
+        console.log($("#date_range_button"));
     	$("#corder_pos").find("input[name='sex'][type='checkbox']").change(function(event) {
      	   event.stopImmediatePropagation();
      	   order = self.get_checked_order_details();
@@ -1895,7 +1921,6 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
     },
     get_order: function(customer_id,args){ 
     	var self = this;
-    	console.log(this.pos.db)
     	var model = new instance.web.Model('pos.order');
     	$(".corder-list-contents").empty();
     	if (customer_id && args){
@@ -2081,7 +2106,7 @@ module.PaymentScreenWidget.include({
         				self.pos_widget.offline_pos_orders.orders[$(order).val()].amount_paid = currentOrder.getPaidTotal();
         				_.each(self.pos.db.cache.orders,function(order){
         					if (order.id == order_id){
-        						statement_ids = [0,0,{ //working
+        						statement_ids = [0,0,{ 
         	        	                name: instance.web.datetime_to_str(new Date()),
         	        	                statement_id: self.pos.cashregisters[0].id,
         	        	                account_id: self.pos.cashregisters[0].account_id[0],
