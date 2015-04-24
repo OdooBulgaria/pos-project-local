@@ -1764,14 +1764,15 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         else{
         	self.get_order();
         }
-        var $date = QWeb.render('date_range',{})
-    	$("#order-down-panel").append($date);
+        if ($('div#date_range').length == 0){
+            var $date = QWeb.render('date_range',{})
+        	$("#order-down-panel").append($date);        	
+        }
         $('button#date_range_button').on('click',function(event){
         	var from = $('input#date_from').val();
         	var to  = $("input#date_to").val();
         	_.each($("tbody#corder_pos").children(),function(order){
         		date = $(order).find("b[name='date']").text();
-        		$(order).hide();
         		if (date){
         			date = new Date(date)
         		}
@@ -1780,13 +1781,13 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
     				if (date >= from){
     					$(order).show();
     				}else{$(order).hide()}
-        		}else{$(order).show();}
+        		}
         		if (to){
         			to = new Date(to);
         			if (date <= to){
         				$(order).show();
         			}else{$(order).hide()}
-        		}else{$(order).show();}
+        		}
         	});
         });
         this.pos_widget.customer_id = undefined;
@@ -1864,7 +1865,6 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
 
     change_event:function(customer_id,args){
         var self = this;
-        console.log($("#date_range_button"));
     	$("#corder_pos").find("input[name='sex'][type='checkbox']").change(function(event) {
      	   event.stopImmediatePropagation();
      	   order = self.get_checked_order_details();
