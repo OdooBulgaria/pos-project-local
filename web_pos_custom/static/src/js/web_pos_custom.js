@@ -576,7 +576,7 @@ module.Orderline = module.Orderline.extend({
                         	}                			
                 			var order_id = parseInt($("input[name='sex'][type='checkbox']:checked").val());
                             _.each($("input[name=sex][type='checkbox']:checked"),function(line){
-                            	if (! ($(line).parent().parent().hasClass('draft') || $(line).parent().parent().hasClass('unsaved'))){
+                            	if (! ($(line).parents('div.client-line.well').hasClass('draft') || $(line).parents('div.client-line.well').hasClass('unsaved'))){
                             		flag = true;
                             	}
                             });
@@ -1041,10 +1041,9 @@ instance.point_of_sale.ClientListScreenWidget = instance.point_of_sale.ClientLis
                     'country_id': self.pos.company.country_id,
                 });
             });
-
             var partners = this.pos.db.get_partners_sorted(1000);
+            console.log("///////////////////////////////=======",self.pos.db.partner_by_id);
             this.render_list(partners);
-            
             this.reload_partners();
 
             if( this.old_client ){
