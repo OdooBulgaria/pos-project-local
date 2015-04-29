@@ -735,12 +735,13 @@ module.Orderline = module.Orderline.extend({
             		var custmer_id = parseInt($("input[name='sex']:checked").val());
             		if (custmer_id){
                         var partner = self.pos.db.get_partner_by_id(custmer_id);
-                        	console.log(partner)
                             $(".clientlist-screen .screen-content:visible").hide();
                             var client_edit = $(QWeb.render('ClientDetailsEditNewModify',{widget:self.pos_widget.clientlist_screen, partner:partner}));
                             var contents = $(".clientlist-screen");
                             contents.append(client_edit);
-                            contents.on('click','.button.save',function(){ self.pos_widget.clientlist_screen.save_client_details(partner); 
+                            contents.on('click','.button.save',function(event){ 
+                        	event.stopImmediatePropagation();
+                            self.pos_widget.clientlist_screen.save_client_details(partner); 
                             $("tr#customer-down-panel").show();
                             $("div.screen-content").css("position","relative");
                             });
@@ -768,8 +769,11 @@ module.Orderline = module.Orderline.extend({
             	if(self.pos_name == 'All Downloaded Orders'){
             		$("div.clientlist-screen.screen").css("overflow","auto");
             		self.pos_widget.customer_id = $("input[name='sex'][type='radio']:checked").val();
+            		var name = self.pos.db.partner_by_id[self.pos_widget.customer_id].name
             		self.pos_widget.mode = 'all'
-        			self.pos_widget.switch_to_order();
+        			self.pos_widget.switch_to_order(); 
+            		var client_edit = $(QWeb.render('name_customer',{name:name}));
+            		$("div#orders").find("div.clientlist-screen.screen").prepend(client_edit);
             		$("button:contains('Download All Older Orders')").removeClass('oe_hidden');
             	}
             	
@@ -801,8 +805,12 @@ module.Orderline = module.Orderline.extend({
                     contents.append(client_edit);
                     contents.off('click','.button.save'); 
                     contents.off('click','.button.undo');
-                    contents.on('click','.button.save',function(){ self.pos_widget.clientlist_screen.save_client_details({});
-            			$("tr#customer-down-panel").show();
+                    contents.on('click','.button.save',function(){ 
+                    	if (!$(contents).find("input[name='sequence']").val()){
+                    		console.log("=========================new save_client_details")
+                    		self.pos_widget.clientlist_screen.save_client_details({});
+                    	}
+                    	$("tr#customer-down-panel").show();
             			$("div.screen-content").css("position","relative");
                     });
                     contents.on('click','.button.undo',function(){ 
@@ -1042,7 +1050,6 @@ instance.point_of_sale.ClientListScreenWidget = instance.point_of_sale.ClientLis
                 });
             });
             var partners = this.pos.db.get_partners_sorted(1000);
-            console.log("///////////////////////////////=======",self.pos.db.partner_by_id);
             this.render_list(partners);
             this.reload_partners();
 
@@ -1108,8 +1115,8 @@ instance.point_of_sale.ClientListScreenWidget = instance.point_of_sale.ClientLis
             }
         },
     save_client_details: function(partner) {
-            var self = this;
-            
+            console.log("save_client_details   ", partner);
+    		var self = this;
             var fields = {};
             $(".client-details:visible").find(".detail").each(function(idx,el){
                 fields[el.name] = el.value;
@@ -1130,6 +1137,7 @@ instance.point_of_sale.ClientListScreenWidget = instance.point_of_sale.ClientLis
             fields.country_id   = fields.country_id || false;
             fields.ean13        = fields.ean13 ? this.pos.barcode_reader.sanitize_ean(fields.ean13) : false; 
             new instance.web.Model('res.partner').call('create_from_ui',[fields]).then(function(partner_id){
+            	console.log('partner_id===========',partner_id); //working
                 self.saved_client_details(partner_id);
             },function(err,event){
                 event.preventDefault();
@@ -1444,6 +1452,7 @@ instance.point_of_sale.PosModel = instance.point_of_sale.PosModel.extend({
             _.each(orders, function (order) {
                 self.db.remove_order(order.id);
                 delete self.pos_widget.offline_pos_orders.orders[order.id];
+                self.pos_widget.switch_to_order();
             });
             _.each(server_ids,function(order){
             	self.pos_widget.offline_pos_orders.orders[order.id] = order
@@ -1469,7 +1478,6 @@ instance.point_of_sale.PosModel = instance.point_of_sale.PosModel.extend({
 		console.log(self.pos_widget.offline_pos_orders.orders);
     	console.log(self);
     	if (!(order.name in self.pos_widget.offline_pos_orders.orders)){
-    		console.log("==================================,order",order);
     		var line_list = {}
     		var partner_id = []
     		var sequence_partner = undefined 
@@ -1752,6 +1760,36 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         $("div[name='screen'].tab-pane").removeClass("active");
         $("div#customers").addClass("active");        	  
     },
+    // when the filter of state or date is used this function will be called
+    on_change_filter_order:function(){  //working really
+    	var from = $('input#date_from').val();
+    	var to  = $("input#date_to").val();
+    	_.each($("tbody#corder_pos").children(),function(order){
+        		date = $(order).find("b[name='date']").text();
+        		state  = $(order).find("div[name='state']").text();
+        		filter_state = $('select#paid_open').val();
+        		if (state == filter_state || filter_state == "null"){
+        			$(order).show()
+        			if (date){
+            			date = new Date(date)
+            		}
+            		if (from){
+            			from = new Date(from)
+        				if (date >= from){
+        					$(order).show();
+        				}else{$(order).hide()}
+            		}
+            		if (to){
+            			to = new Date(to);
+            			if (date <= to){
+            				$(order).show();
+            			}else{$(order).hide()}
+            		}    				            			
+        		}else{
+        			$(order).hide();
+        		}
+    	});    	
+    },
     switch_to_order:function(){
         var self = this;
         if (this.pos_widget.customer_id && self.pos_widget.mode == 'all'){
@@ -1763,31 +1801,24 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         else{
         	self.get_order();
         }
-        if ($('div#date_range').length == 0){
+
+        //so that it appears only once -- date range
+        $('div#date_range').remove()
             var $date = QWeb.render('date_range',{})
-        	$("#order-down-panel").append($date);        	
-        }
+        	$("#order-down-panel").append($date);
+        
+        //so that it appears only once paid/open filter
+        $('select#paid_open').remove();
+	        var paid_open = QWeb.render('paid_open',{})
+	        $("div#orders").find("div.clientlist-screen.screen").prepend(paid_open); 
+	    
+        $(document).on('change','select#paid_open',function(event){
+        	self.on_change_filter_order();
+        });
+        
+        $("div#name_customer").remove();
         $('button#date_range_button').on('click',function(event){
-        	var from = $('input#date_from').val();
-        	var to  = $("input#date_to").val();
-        	_.each($("tbody#corder_pos").children(),function(order){
-        		date = $(order).find("b[name='date']").text();
-        		if (date){
-        			date = new Date(date)
-        		}
-        		if (from){
-        			from = new Date(from)
-    				if (date >= from){
-    					$(order).show();
-    				}else{$(order).hide()}
-        		}
-        		if (to){
-        			to = new Date(to);
-        			if (date <= to){
-        				$(order).show();
-        			}else{$(order).hide()}
-        		}
-        	});
+        	self.on_change_filter_order();
         });
         this.pos_widget.customer_id = undefined;
         this.pos_widget.mode = undefined;

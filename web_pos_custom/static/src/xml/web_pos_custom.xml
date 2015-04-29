@@ -520,6 +520,19 @@
             <t t-esc="widget.pos_name"/>
         </button>
     </t>
+    <t t-name = "name_customer">
+	    <div id = "name_customer" style = "padding-bottom:20px">
+			<strong><span>Showing Orders for the customer </span><span t-esc = "name"></span></strong>
+	    </div>
+	    
+    </t>
+    <t t-name = "paid_open">
+    	<select id = "paid_open">
+    	  <option value = "null"></option>
+		  <option value="paid">Paid</option>
+		  <option value="draft">Open</option>
+		</select>
+    </t>
     
     <t t-name = "date_range">
 	    <div id = "date_range">
