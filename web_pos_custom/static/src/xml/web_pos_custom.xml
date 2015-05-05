@@ -477,6 +477,13 @@
                     </dl>
                      
                 </div>
+                <div class="tii-order-status">
+                    <dl>
+                        <dt>Status:</dt>
+                        <dd><b name = "order_status" t-esc = "order.state"></b></dd>
+                    </dl>
+                     
+                </div>
                 <div class="tii-order-checkbox">
                     <dl>
                         <dt><input type="checkbox" name="sex" t-att-value="order.id or order.name.split(' ')[1] or ''"/>&amp;nbsp;&amp;nbsp;<a><b style="color:#00A8E6;">Select Order</b></a><b style="display:none" name = "customer_id"><t t-if="order.partner_id" t-esc="order.partner_id[0]"/></b></dt>
@@ -527,16 +534,20 @@
 	    
     </t>
     <t t-name = "paid_open">
-    	<select id = "paid_open">
-    	  <option value = "null"></option>
-		  <option value="paid">Paid</option>
-		  <option value="draft">Open</option>
-		</select>
+    	<div id = "paid_open">
+	    	Filter Orders Based on Status 
+	    	<select id = "paid_open">
+	    	  <option value = "null"></option>
+			  <option value="paid">Paid</option>
+			  <option value="draft">Open</option>
+			</select>    	
+    	</div>
     </t>
     
     <t t-name = "date_range">
 	    <div id = "date_range">
-	    	From : <input id = "date_from" type = "date"/>
+     	<span>Filter Orders Based on Date</span><br></br>
+	     From : <input id = "date_from" type = "date"/>
 	    	To : <input id = "date_to" type = "date"/>
 	    	<button id = "date_range_button" class = "paypad-button">
 	    		<t t-esc = "'Go'"/>

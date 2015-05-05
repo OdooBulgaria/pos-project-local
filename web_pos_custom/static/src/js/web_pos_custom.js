@@ -600,10 +600,12 @@ module.Orderline = module.Orderline.extend({
                                    return;
                                }
                                self.pos.get('selectedOrder').addPaymentline(self.cashregister);
-                               $("#corder_pos").hide();
-                               $(".content-calculate").hide();
+//                               $("#corder_pos").hide();
+//                               $("#paid_open").hide();
+//                               $('#name_customer').hide();
+//                               $(".content-calculate").hide();
+                                 $("div.product-screen.screen").hide;
                                self.pos_widget.screen_selector.set_current_screen('payment');                        
-                               return;                        	   
                            }
                            else {
                         	   self.pos_widget.modify_orders_widget.pay_list = [] 
@@ -642,6 +644,7 @@ module.Orderline = module.Orderline.extend({
                     	var order_save = checkboxes[0];
                     	var currentOrder = self.pos.get('selectedOrder')
                 		self.pos_widget.available_qty = true;
+                    	self.before_modify_total = currentOrder.getTotalTaxIncluded();
                     	if (currentOrder.getTotalTaxIncluded() < 0){
                             self.pos_widget.screen_selector.show_popup('error',{
                                 message: _t('Back Orders Cannot be modified'),
@@ -666,11 +669,17 @@ module.Orderline = module.Orderline.extend({
                     	var model = new instance.web.Model("pos.order.line");
                     	var model_order = new instance.web.Model("pos.order");
                     	$("#modify_order_pay_cash").click(function(){
+                    		var new_currentOrder = self.pos.get('selectedOrder');
+                    		final_difference = (self.before_modify_total - new_currentOrder.getTotalTaxIncluded())
                     		self.pos_widget.available_qty = undefined;
                 			self.modify_order($("#corder_pos").find("input[name='sex'][type='checkbox']:checked").val(),$($(order_save).siblings()[0]).text() == 'unsaved');
                 			$("#modify_order").remove();
                     	    $($("tr[name='products']").children()[1]).removeAttr("style");
+                    	    console.log("currentOrder.getTotalTaxIncluded()    ",new_currentOrder.getTotalTaxIncluded())
+                    	    console.log("=self.before_modify_total  ",self.before_modify_total);
+                    	    
                     	    self.pos.get('selectedOrder').destroy();
+                    	    alert("Please return a difference of -: " + final_difference);
                     	});
                     }            	                	
                 	
@@ -728,7 +737,7 @@ module.Orderline = module.Orderline.extend({
             
             this.$el.click(function(){   
             	if (self.pos_name == "Modify Customer"){
-            		$("div.clientlist-screen.screen").css("overflow","auto");
+//            		$("div.clientlist-screen.screen").css("overflow","auto");
             		$("div.screen-content").css("position","absolute");
             		$("tr#customer-down-panel").hide();
             		var model = new instance.web.Model('res.partner');
@@ -767,7 +776,7 @@ module.Orderline = module.Orderline.extend({
             	}
 
             	if(self.pos_name == 'All Downloaded Orders'){
-            		$("div.clientlist-screen.screen").css("overflow","auto");
+//            		$("div.clientlist-screen.screen").css("overflow","auto");
             		self.pos_widget.customer_id = $("input[name='sex'][type='radio']:checked").val();
             		var name = self.pos.db.partner_by_id[self.pos_widget.customer_id].name
             		self.pos_widget.mode = 'all'
@@ -778,7 +787,7 @@ module.Orderline = module.Orderline.extend({
             	}
             	
             	if (self.pos_name == "Show Open Orders"){
-            		$("div.clientlist-screen.screen").css("overflow","auto");
+//            		$("div.clientlist-screen.screen").css("overflow","auto");
             		self.pos_widget.customer_id = $("input[name='sex'][type='radio']:checked").val();
             		self.pos_widget.mode = 'open'
         			self.pos_widget.switch_to_order();
@@ -797,7 +806,7 @@ module.Orderline = module.Orderline.extend({
             	if (self.pos_name == "New Customer"){
                     //            
             		$("div.screen-content").css("position","absolute");
-            		$("div.clientlist-screen.screen").css("overflow","auto");
+//            		$("div.clientlist-screen.screen").css("overflow","auto");
                     $(".clientlist-screen .screen-content:visible").hide();
             		$("tr#customer-down-panel").hide();
             		var client_edit = $(QWeb.render('ClientDetailsEditNewModify',{widget:self.pos_widget.clientlist_screen, partner:{country_id: false}}));
@@ -807,7 +816,6 @@ module.Orderline = module.Orderline.extend({
                     contents.off('click','.button.undo');
                     contents.on('click','.button.save',function(){ 
                     	if (!$(contents).find("input[name='sequence']").val()){
-                    		console.log("=========================new save_client_details")
                     		self.pos_widget.clientlist_screen.save_client_details({});
                     	}
                     	$("tr#customer-down-panel").show();
@@ -1013,10 +1021,9 @@ instance.point_of_sale.ScreenSelector = instance.point_of_sale.ScreenSelector.ex
             if( screen_name !== old_screen_name ){
                 order.set_screen_data('previous-screen',old_screen_name);
             }
-
             if ( refresh || screen !== this.current_screen){
                 if(this.current_screen && screen_name !== 'clientlist'){
-                    this.current_screen.close();
+                	this.current_screen.close();
                     this.current_screen.hide();
                 }
                 this.current_screen = screen;
@@ -1115,7 +1122,6 @@ instance.point_of_sale.ClientListScreenWidget = instance.point_of_sale.ClientLis
             }
         },
     save_client_details: function(partner) {
-            console.log("save_client_details   ", partner);
     		var self = this;
             var fields = {};
             $(".client-details:visible").find(".detail").each(function(idx,el){
@@ -1137,7 +1143,6 @@ instance.point_of_sale.ClientListScreenWidget = instance.point_of_sale.ClientLis
             fields.country_id   = fields.country_id || false;
             fields.ean13        = fields.ean13 ? this.pos.barcode_reader.sanitize_ean(fields.ean13) : false; 
             new instance.web.Model('res.partner').call('create_from_ui',[fields]).then(function(partner_id){
-            	console.log('partner_id===========',partner_id); //working
                 self.saved_client_details(partner_id);
             },function(err,event){
                 event.preventDefault();
@@ -1452,7 +1457,8 @@ instance.point_of_sale.PosModel = instance.point_of_sale.PosModel.extend({
             _.each(orders, function (order) {
                 self.db.remove_order(order.id);
                 delete self.pos_widget.offline_pos_orders.orders[order.id];
-                self.pos_widget.switch_to_order();
+            	self.pos_widget.get_order(); //working
+
             });
             _.each(server_ids,function(order){
             	self.pos_widget.offline_pos_orders.orders[order.id] = order
@@ -1792,6 +1798,8 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
     },
     switch_to_order:function(){
         var self = this;
+        var ss = self.pos.pos_widget.screen_selector;
+        ss.set_current_screen('products');
         if (this.pos_widget.customer_id && self.pos_widget.mode == 'all'){
         	self.get_order(this.pos_widget.customer_id,['invoiced','done','paid','draft']); //working
         }
@@ -1808,7 +1816,7 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         	$("#order-down-panel").append($date);
         
         //so that it appears only once paid/open filter
-        $('select#paid_open').remove();
+        $('div#paid_open').remove();
 	        var paid_open = QWeb.render('paid_open',{})
 	        $("div#orders").find("div.clientlist-screen.screen").prepend(paid_open); 
 	    
@@ -2128,7 +2136,6 @@ module.PaymentScreenWidget.include({
         	var checkboxes = document.querySelectorAll("input[name='sex'][type='checkbox']:checked");
     		for(i=0;i<checkboxes.length;i++){
         		order = checkboxes[i];
-        		console.log("===",self)
         		if ($($(order).siblings()[0]).text() == 'unsaved'){
         			if (self.pos_widget.offline_pos_orders.orders[$(order).val()].amount_paid == undefined)
         				{
@@ -2228,10 +2235,6 @@ module.PaymentScreenWidget.include({
     	}
     	this.remove_empty_lines();
     },	
-    show: function(){
-        this._super();
-        var self = this;
-	},	
 }); 
 	
 
