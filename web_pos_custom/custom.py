@@ -82,15 +82,10 @@ class pos_order(osv.osv):
         return data        
     
     def fetch_pos_order_domain(self,cr,uid,domain,context=None):
-        id_list = []
-        query = '''select id from pos_order where '''
-        
-        for dom in domain:
-            query += ''.join(dom)
-        cr.execute(query)
-        id_list.extend(cr.fetchall())
-        if id_list:
-            return self.add_order_object(cr,uid,[x[0] for x in id_list],context)        
+        order = []
+        order = self.pool.get('pos.order').search(cr,uid,domain,context)
+        if len(order) > 0:
+            return self.add_order_object(cr,uid,[x for x in order],context)        
         return
     
     def fetch_pos_order(self,cr,uid,context = None):
@@ -105,7 +100,6 @@ class pos_order(osv.osv):
         
 #         [(5,), (9,), (3,), (2,), (10,), (1,), (7,), (6,), (4,)]
         id_list.extend(cr.fetchall())
-
         if id_list:
             return self.add_order_object(cr,uid,[x[0] for x in id_list],context)
         return {}

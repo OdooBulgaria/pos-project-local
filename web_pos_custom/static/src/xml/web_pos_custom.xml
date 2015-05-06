@@ -546,12 +546,21 @@
     
     <t t-name = "date_range">
 	    <div id = "date_range">
-     	<span>Filter Orders Based on Date</span><br></br>
-	     From : <input id = "date_from" type = "date"/>
+     	<span><strong style = "padding-bottom:10px;">Filter Orders Based on Date</strong></span>
+     	<br></br>
+	     From : <input id = "date_from" type = "date" />
 	    	To : <input id = "date_to" type = "date"/>
 	    	<button id = "date_range_button" class = "paypad-button">
 	    		<t t-esc = "'Go'"/>
-	    	</button>	    
+	    	</button>
+	     <br></br>
+		 <span><strong>Download Order Based on Date</strong></span>
+		 <br></br>
+	     From : <input id = "date_from_download" type = "date"/>
+	     To : <input id = "date_to_download" type = "date"/>
+	    	<button id = "date_range_button_download" class = "paypad-button">
+	    		<t t-esc = "'Go'"/>
+	    	</button>
 	    </div>
     </t>
     

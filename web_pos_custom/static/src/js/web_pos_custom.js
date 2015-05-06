@@ -675,9 +675,6 @@ module.Orderline = module.Orderline.extend({
                 			self.modify_order($("#corder_pos").find("input[name='sex'][type='checkbox']:checked").val(),$($(order_save).siblings()[0]).text() == 'unsaved');
                 			$("#modify_order").remove();
                     	    $($("tr[name='products']").children()[1]).removeAttr("style");
-                    	    console.log("currentOrder.getTotalTaxIncluded()    ",new_currentOrder.getTotalTaxIncluded())
-                    	    console.log("=self.before_modify_total  ",self.before_modify_total);
-                    	    
                     	    self.pos.get('selectedOrder').destroy();
                     	    alert("Please return a difference of -: " + final_difference);
                     	});
@@ -698,26 +695,6 @@ module.Orderline = module.Orderline.extend({
                         }
                         
                     }
-                	if (self.pos_name == 'Download All Older Orders'){
-                		$("div.clientlist-screen.screen").css("overflow","auto");
-                		self.pos_widget.customer_id = $("input[name='sex'][type='radio']:checked").val();
-                		var model = new instance.web.Model('pos.order');
-                		model.call('fetch_pos_order_domain',{ 
-                			context:{},
-                			domain:[['partner_id','=',self.pos_widget.customer_id]],
-                			}).then(function(data){
-                				_.each(data,function(order){
-                					if (self.pos_widget.offline_pos_orders.orders[order.id] == undefined){
-                						self.pos_widget.offline_pos_orders.orders[order.id] = order
-                					}
-                				});
-                        		self.pos_widget.mode = 'all'
-                    			self.pos_widget.switch_to_order();
-            			},function(err,event){
-            				window.alert("Not able to download any orders as the Internet Connection is down");
-            				event.preventDefault();
-            			});
-                	} 
                     if (self.pos_name == "Park Order"){
                         var order_lines = [];
                         while(true){
@@ -783,7 +760,6 @@ module.Orderline = module.Orderline.extend({
         			self.pos_widget.switch_to_order(); 
             		var client_edit = $(QWeb.render('name_customer',{name:name}));
             		$("div#orders").find("div.clientlist-screen.screen").prepend(client_edit);
-            		$("button:contains('Download All Older Orders')").removeClass('oe_hidden');
             	}
             	
             	if (self.pos_name == "Show Open Orders"){
@@ -1457,7 +1433,7 @@ instance.point_of_sale.PosModel = instance.point_of_sale.PosModel.extend({
             _.each(orders, function (order) {
                 self.db.remove_order(order.id);
                 delete self.pos_widget.offline_pos_orders.orders[order.id];
-            	self.pos_widget.get_order(); //working
+            	self.pos_widget.get_order(); 
 
             });
             _.each(server_ids,function(order){
@@ -1658,8 +1634,12 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         this.customer_paypad_order.replace(this.$('.placeholder-PaypadWidget-customer-order'));        
         
         this.order_paypad = 
-            new module.PaypadWidget(this, {template:'OrderPaypadButtonWidget', screen:"orders", buttons:["Pay", "Modify Order","Clear Selection","Download All Older Orders"]});
-        this.order_paypad.replace(this.$('.placeholder-PaypadWidget-order-right'));
+        new module.PaypadWidget(this, {template:'OrderPaypadButtonWidget', screen:"orders", buttons:["Pay", "Modify Order"]});
+        this.order_paypad.replace(this.$('.placeholder-PaypadWidget-order-left'));
+        
+        this.order_paypad_right = 
+        new module.PaypadWidget(this, {template:'OrderPaypadButtonWidget', screen:"orders", buttons:["Clear Selection"]});
+        this.order_paypad_right.replace(this.$('.placeholder-PaypadWidget-order-right'));
         
         this.numpad = new module.NumpadWidget(this);
         this.numpad.replace(this.$('.placeholder-NumpadWidget'));
@@ -1767,7 +1747,7 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         $("div#customers").addClass("active");        	  
     },
     // when the filter of state or date is used this function will be called
-    on_change_filter_order:function(){  //working really
+    on_change_filter_order:function(){  
     	var from = $('input#date_from').val();
     	var to  = $("input#date_to").val();
     	_.each($("tbody#corder_pos").children(),function(order){
@@ -1778,30 +1758,21 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         			$(order).show()
         			if (date){
             			date = new Date(date)
-            		}
-            		if (from){
-            			from = new Date(from)
-        				if (date >= from){
-        					$(order).show();
-        				}else{$(order).hide()}
-            		}
-            		if (to){
-            			to = new Date(to);
-            			if (date <= to){
-            				$(order).show();
-            			}else{$(order).hide()}
-            		}    				            			
+            			if (from){from = new Date(from);}else{from = new Date();}
+            			if (to){to = new Date(to);}else{to = new Date();}
+            			if (date >= from && date <= to){$(order).show();}else{$(order).hide();}
+        			}else{$(order).hide()}
         		}else{
         			$(order).hide();
         		}
     	});    	
     },
-    switch_to_order:function(){
+    switch_to_order:function(customer_name){
         var self = this;
         var ss = self.pos.pos_widget.screen_selector;
         ss.set_current_screen('products');
         if (this.pos_widget.customer_id && self.pos_widget.mode == 'all'){
-        	self.get_order(this.pos_widget.customer_id,['invoiced','done','paid','draft']); //working
+        	self.get_order(this.pos_widget.customer_id,['invoiced','done','paid','draft']); 
         }
         else if (this.pos_widget.customer_id && self.pos_widget.mode == 'open'){
         	self.get_order(this.pos_widget.customer_id,['draft']);
@@ -1811,23 +1782,58 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         }
 
         //so that it appears only once -- date range
-        $('div#date_range').remove()
+        $('div#date_range').remove();
             var $date = QWeb.render('date_range',{})
         	$("#order-down-panel").append($date);
-        
+        	
         //so that it appears only once paid/open filter
-        $('div#paid_open').remove();
-	        var paid_open = QWeb.render('paid_open',{})
-	        $("div#orders").find("div.clientlist-screen.screen").prepend(paid_open); 
+        if (customer_name != 1){ // this comparison is done so that it is not removed when we download orders based on date
+            	$("div#name_customer").remove();
+            	$('div#paid_open').remove();
+                var paid_open = QWeb.render('paid_open',{})
+                $("div#orders").find("div.clientlist-screen.screen").prepend(paid_open); 
+        }        
 	    
         $(document).on('change','select#paid_open',function(event){
         	self.on_change_filter_order();
         });
         
-        $("div#name_customer").remove();
+
         $('button#date_range_button').on('click',function(event){
         	self.on_change_filter_order();
         });
+        $('button#date_range_button_download').on('click',function(event){
+        	var domain = [['amount_total','>=',0],['state','in',['draft','invoiced','paid','done']]];
+        	date_from = $('input#date_from_download').val();
+        	date_to = $('input#date_to_download').val();
+    		self.pos_widget.customer_id = $("input[name='sex'][type='radio']:checked").val();
+    		if (self.pos_widget.customer_id){
+    			domain.push(['partner_id','=',parseInt(self.pos_widget.customer_id)])
+    		}
+    		if (date_from){
+    			domain.push(['date_order','>=',date_from]);
+    		}
+    		if (date_to){
+    			domain.push(['date_order','<=',date_to]);
+    		}
+    		var model = new instance.web.Model('pos.order');
+    		model.call('fetch_pos_order_domain',{ 
+    			context:{},
+    			domain:domain,
+    			}).then(function(data){
+    				_.each(data,function(order){
+    					if (self.pos_widget.offline_pos_orders.orders[order.id] == undefined){
+    						self.pos_widget.offline_pos_orders.orders[order.id] = order
+    					}
+    				});
+            		self.pos_widget.mode = 'all'
+        			self.pos_widget.switch_to_order(customer_name = 1);
+			},function(err,event){
+				window.alert("Not able to download any orders as the Internet Connection is down");
+				event.preventDefault();
+			});
+        });
+        
         this.pos_widget.customer_id = undefined;
         this.pos_widget.mode = undefined;
         $("a[data-toggle='tab']").parent().removeClass('active');
@@ -1844,7 +1850,6 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         $("div.screen-content").css("position","relative");
         $("div[name='screen'].tab-pane").removeClass("active");
         $("div#orders").addClass("active");
-        $("button:contains('Download All Older Orders')").addClass('oe_hidden');
         var search_timeout = null;
     },
     enable_customize: function(){
