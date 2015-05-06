@@ -341,8 +341,8 @@ module.Order = module.Order.extend({
 
 module.OrderWidget = module.OrderWidget.extend({
     set_value: function(val) {
-    	var order = this.pos.get('selectedOrder');
     	var self = this;
+    	var order = this.pos.get('selectedOrder');
     	if (this.editable && order.getSelectedLine()) {
             var mode = this.numpad_state.get('mode');
             if( mode === 'quantity'){
@@ -633,7 +633,9 @@ module.Orderline = module.Orderline.extend({
   	                  }
             		}
             		
-                    if (self.pos_name == "Modify Order"){ 
+                    if (self.pos_name == "Modify Order"){
+                    	var template = QWeb.render('difference_total_dynamic')
+                    	$('div.summary.clearfix').append(template);
                     	var checkboxes = document.querySelectorAll("input[name='sex'][type='checkbox']:checked");
                     	if (checkboxes.length > 1){
                             self.pos_widget.screen_selector.show_popup('error',{
@@ -645,6 +647,11 @@ module.Orderline = module.Orderline.extend({
                     	var currentOrder = self.pos.get('selectedOrder')
                 		self.pos_widget.available_qty = true;
                     	self.before_modify_total = currentOrder.getTotalTaxIncluded();
+                    	$('button.input-button').bind('click',function(){
+                    		var currentOrder = self.pos.get('selectedOrder')
+                    		final_difference = (self.before_modify_total - currentOrder.getTotalTaxIncluded());
+                    		$("input#difference_total_dynamic").val(final_difference);
+                    	});
                     	if (currentOrder.getTotalTaxIncluded() < 0){
                             self.pos_widget.screen_selector.show_popup('error',{
                                 message: _t('Back Orders Cannot be modified'),
@@ -660,7 +667,7 @@ module.Orderline = module.Orderline.extend({
                     	$("tr[name='products']").append(QWeb.render('button_pay_cancel'))
                   	    self.pos_widget.switch_to_product();
                     	$("#modify_order_cancel").click(function(){
-                		  self.pos_widget.available_qty = undefined;
+                    	  self.pos_widget.available_qty = undefined;
                   		  self.pos.get('selectedOrder').destroy();
                           $("#modify_order").remove();
                       	  $($("tr[name='products']").children()[1]).removeAttr("style");
@@ -669,14 +676,11 @@ module.Orderline = module.Orderline.extend({
                     	var model = new instance.web.Model("pos.order.line");
                     	var model_order = new instance.web.Model("pos.order");
                     	$("#modify_order_pay_cash").click(function(){
-                    		var new_currentOrder = self.pos.get('selectedOrder');
-                    		final_difference = (self.before_modify_total - new_currentOrder.getTotalTaxIncluded())
                     		self.pos_widget.available_qty = undefined;
                 			self.modify_order($("#corder_pos").find("input[name='sex'][type='checkbox']:checked").val(),$($(order_save).siblings()[0]).text() == 'unsaved');
                 			$("#modify_order").remove();
                     	    $($("tr[name='products']").children()[1]).removeAttr("style");
                     	    self.pos.get('selectedOrder').destroy();
-                    	    alert("Please return a difference of -: " + final_difference);
                     	});
                     }            	                	
                 	
