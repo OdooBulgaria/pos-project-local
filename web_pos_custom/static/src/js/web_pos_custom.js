@@ -1754,17 +1754,13 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         		date = $(order).find("b[name='date']").text();
         		state  = $(order).find("div[name='state']").text();
         		filter_state = $('select#paid_open').val();
-        		if (state == filter_state || filter_state == "null"){
-        			$(order).show()
-        			if (date){
-            			date = new Date(date)
-            			if (from){from = new Date(from);}else{from = new Date();}
-            			if (to){to = new Date(to);}else{to = new Date();}
-            			if (date >= from && date <= to){$(order).show();}else{$(order).hide();}
-        			}else{$(order).hide()}
-        		}else{
-        			$(order).hide();
-        		}
+				$(order).show()
+				if (date){
+	    			date = new Date(date)
+	    			if (from){from = new Date(from);}else{from = new Date();}
+	    			if (to){to = new Date(to);}else{to = new Date();}
+	    			if (date >= from && date <= to){$(order).show();}else{$(order).hide();}
+				}else{$(order).hide()}
     	});    	
     },
     switch_to_order:function(customer_name){
@@ -1789,9 +1785,6 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
         //so that it appears only once paid/open filter
         if (customer_name != 1){ // this comparison is done so that it is not removed when we download orders based on date
             	$("div#name_customer").remove();
-            	$('div#paid_open').remove();
-                var paid_open = QWeb.render('paid_open',{})
-                $("div#orders").find("div.clientlist-screen.screen").prepend(paid_open); 
         }        
 	    
         $(document).on('change','select#paid_open',function(event){
