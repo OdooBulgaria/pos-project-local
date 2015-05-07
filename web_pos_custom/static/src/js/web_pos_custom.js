@@ -71,7 +71,9 @@ module.PosModel = module.PosModel.extend({
                  model:  'res.users',
                  fields: ['name','ean13'],
                  domain: null,
-                 loaded: function(self,users){ self.users = users; },
+                 loaded: function(self,users){
+                	 self.users = users; 
+            	 },
              },{
                  model:  'res.partner',
                  fields: ['name','street','street2','sequence','city','state_id','country_id','vat','phone','zip','mobile','email','ean13','write_date'],
@@ -724,19 +726,20 @@ module.Orderline = module.Orderline.extend({
             		var model = new instance.web.Model('res.partner');
             		var custmer_id = parseInt($("input[name='sex']:checked").val());
             		if (custmer_id){
-                        var partner = self.pos.db.get_partner_by_id(custmer_id);
                             $(".clientlist-screen .screen-content:visible").hide();
-                            var client_edit = $(QWeb.render('ClientDetailsEditNewModify',{widget:self.pos_widget.clientlist_screen, partner:partner}));
+                            var client_edit = $(QWeb.render('ClientDetailsEditNewModify',{widget:self.pos_widget.clientlist_screen, partner:self.pos.db.partner_by_id[custmer_id]}));
                             var contents = $(".clientlist-screen");
                             contents.append(client_edit);
                             contents.on('click','.button.save',function(event){ 
-                        	event.stopImmediatePropagation();
-                            self.pos_widget.clientlist_screen.save_client_details(partner); 
-                            $("tr#customer-down-panel").show();
-                            $("div.screen-content").css("position","relative");
+                            	var custmer_id = parseInt($("input[name='sex']:checked").val());
+                            	event.stopImmediatePropagation();
+	                            self.pos_widget.clientlist_screen.save_client_details(self.pos.db.partner_by_id[custmer_id]);
+	                            $(client_edit).remove();
+	                            $("tr#customer-down-panel").show();
+	                            $("div.screen-content").css("position","relative");
                             });
                             contents.on('click','.button.undo',function(){
-                            	self.pos_widget.clientlist_screen.undo_client_details(partner); 
+                            	self.pos_widget.clientlist_screen.undo_client_details(self.pos.db.partner_by_id[custmer_id]); 
                             	$("tr#customer-down-panel").show();
                             	$("div.screen-content").css("position","relative");
                             });
@@ -754,6 +757,7 @@ module.Orderline = module.Orderline.extend({
                             	$("div.screen-content").css("position","relative");
                             });		                                		                    
             		}
+            		delete custmer_id;
             	}
 
             	if(self.pos_name == 'All Downloaded Orders'){
@@ -1036,10 +1040,9 @@ instance.point_of_sale.ClientListScreenWidget = instance.point_of_sale.ClientLis
                     'country_id': self.pos.company.country_id,
                 });
             });
-            var partners = this.pos.db.get_partners_sorted(1000);
+            var partners = this.pos.db.get_partners_sorted();
             this.render_list(partners);
             this.reload_partners();
-
             if( this.old_client ){
                 this.display_client_details('show',this.old_client,0);
             }
@@ -1122,8 +1125,11 @@ instance.point_of_sale.ClientListScreenWidget = instance.point_of_sale.ClientLis
             fields.id           = partner.id || false;
             fields.country_id   = fields.country_id || false;
             fields.ean13        = fields.ean13 ? this.pos.barcode_reader.sanitize_ean(fields.ean13) : false; 
+            if (partner['sequence']){
+            	delete partner['sequence'];
+            }
             new instance.web.Model('res.partner').call('create_from_ui',[fields]).then(function(partner_id){
-                self.saved_client_details(partner_id);
+            	self.saved_client_details(partner_id);
             },function(err,event){
                 event.preventDefault();
                 self.pos_widget.screen_selector.show_popup('error',{
@@ -1791,9 +1797,10 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
             	$("div#name_customer").remove();
         }        
 	    
-        $(document).on('change','select#paid_open',function(event){
-        	self.on_change_filter_order();
-        });
+//Filter based on date has been removed but
+//        $(document).on('change','select#paid_open',function(event){
+//        	self.on_change_filter_order();
+//        });
         
 
         $('button#date_range_button').on('click',function(event){
@@ -1959,21 +1966,43 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
      	   }        	   
         });
     },
+    sort_by_date_order:function(){
+    	var self = this;
+    	if (self.offline_pos_orders){
+    		var list = []
+    		_.each (self.offline_pos_orders.orders,function(order){
+        		list.push(order);
+        	});
+        	list = list.sort(function(a,b) {
+        		if (a.date_order == b.date_order){
+        			return a.partner_id[1] - b.partner_id[1]
+        		}else{
+        			a = new Date(a.date_order);
+        			b = new Date(b.date_order);
+        			return  b-a ;
+        		}
+    		});
+        	return list
+    	}
+    },
     get_order: function(customer_id,args){ 
     	var self = this;
     	var model = new instance.web.Model('pos.order');
     	$(".corder-list-contents").empty();
-    	if (customer_id && args){
-    		_.each(self.offline_pos_orders.orders, function(rec){
-	    		if (rec.partner_id[0] == parseInt(customer_id) && (args.indexOf(rec.state) != -1)){
-	    			$("#corder_pos").append(QWeb.render('CordersList',{'order':rec}));
-	    		}
-	       });    		    			
-    	}else{
-        	_.each(self.offline_pos_orders.orders, function(rec){
-        		$("#corder_pos").append(QWeb.render('CordersList',{'order':rec}));
-           });    		
+    	if (! _.isEmpty(self.offline_pos_orders.orders)){
+    		if (customer_id && args){
+    			_.each(self.sort_by_date_order(),function(rec){
+    	    		if (rec.partner_id[0] == parseInt(customer_id) && (args.indexOf(rec.state) != -1)){
+    	    			$("#corder_pos").append(QWeb.render('CordersList',{'order':rec}));
+    	    		}    			    				
+    			})
+        	}else{
+        		_.each(self.sort_by_date_order(),function(rec){
+            		$("#corder_pos").append(QWeb.render('CordersList',{'order':rec}));        			
+        		})
+        	}    		
     	}
+
         $('#search_orders input').on('keyup',function(event){
         	var query = (this.value);
         	var search_timeout = null;
