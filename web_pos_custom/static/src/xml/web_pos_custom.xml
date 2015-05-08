@@ -546,6 +546,14 @@
     
     <t t-name = "date_range">
 	    <div id = "date_range">
+     	<span><strong style = "padding-bottom:10px;">Filter Orders Based on Date</strong></span>
+     	<br></br>
+	     From : <input id = "date_from" type = "date" />
+	    	To : <input id = "date_to" type = "date"/>
+	    	<button id = "date_range_button" class = "paypad-button">
+	    		<t t-esc = "'Go'"/>
+	    	</button>
+	     <br></br>
 		 <span><strong>Download Order Based on Date</strong></span>
 		 <br></br>
 	     From : <input id = "date_from_download" type = "date"/>
@@ -555,6 +563,7 @@
 	    	</button>
 	    </div>
     </t>
+    
     <t t-name = "difference_total_dynamic">
     	<div id = "difference_total_dynamic">
     		Difference :<input readonly = "1" type = "number" step = "0.01" id = "difference_total_dynamic"/>

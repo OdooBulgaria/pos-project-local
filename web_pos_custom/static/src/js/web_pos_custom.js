@@ -33,7 +33,26 @@ module.PosDB =  module.PosDB.extend({
 });  
     
 module.PosModel = module.PosModel.extend({
-    models: [
+
+    load_new_partners: function(){
+        var self = this;
+        var def  = new $.Deferred();
+        var fields = _.find(this.models,function(model){ return model.model === 'res.partner'; }).fields;
+        new instance.web.Model('res.partner')
+            .query(fields)
+            .filter([['customer','=',true],['write_date','>',this.db.get_partner_write_date()]])
+            .all({'timeout':3000, 'shadow': true})
+            .then(function(partners){
+                if (self.db.add_partners(partners)) {   // check if the partners we got were real updates
+                    def.resolve();
+                } else {
+                    def.reject();
+                }
+            }, function(err,event){ event.preventDefault(); def.reject(); });    
+        return def;
+    },	
+	
+	models: [
              {
                  model:  'res.users',
                  fields: ['name','company_id'],
@@ -1760,16 +1779,24 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
     on_change_filter_order:function(){  
     	var from = $('input#date_from').val();
     	var to  = $("input#date_to").val();
+    	
     	_.each($("tbody#corder_pos").children(),function(order){
         		date = $(order).find("b[name='date']").text();
         		state  = $(order).find("div[name='state']").text();
         		filter_state = $('select#paid_open').val();
 				$(order).show()
-				if (date){
-	    			date = new Date(date)
-	    			if (from){from = new Date(from);}else{from = new Date();}
-	    			if (to){to = new Date(to);}else{to = new Date();}
-	    			if (date >= from && date <= to){$(order).show();}else{$(order).hide();}
+				if ((!from) && (!to)){$(order).show();}
+				else if (date){
+	    			date = new Date(date);
+	    			if (from){from = new Date(from)} ;
+	    			if (to) {to = new Date(to)};
+	    			if (from && to){
+	    				if (date >= from && date <= to){$(order).show();}else{$(order).hide();}
+	    			}else if (from){
+	    				if (date >=from){$(order).show()}else{$(order).hide()}
+	    			}else if (to){
+	    				if (date <=to){$(order).show()}else{$(order).hide()}
+	    			}
 				}else{$(order).hide()}
     	});    	
     },
@@ -1797,10 +1824,10 @@ instance.point_of_sale.PosWidget = instance.point_of_sale.PosWidget.extend({
             	$("div#name_customer").remove();
         }        
 	    
-//Filter based on date has been removed but
-//        $(document).on('change','select#paid_open',function(event){
-//        	self.on_change_filter_order();
-//        });
+        //Filter based on date has been removed but
+        $(document).on('change','select#paid_open',function(event){
+        	self.on_change_filter_order();
+        });
         
 
         $('button#date_range_button').on('click',function(event){
