@@ -14,4 +14,11 @@
 	<natures>
 		<nature>org.python.pydev.pythonNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>openerp</name>
+			<type>2</type>
+			<location>/home/shivam/odoo/openerp</location>
+		</link>
+	</linkedResources>
 </projectDescription>
